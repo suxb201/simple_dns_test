@@ -13,6 +13,7 @@ import ping3
 
 import eventloop
 from config import config
+from tcp_latency import measure_latency
 
 VALID_HOSTNAME = re.compile(r"(?!-)[A-Z\d\-_]{1,63}(?<!-)$", re.IGNORECASE)
 
@@ -22,8 +23,6 @@ QTYPE_AAAA = 28
 QTYPE_CNAME = 5
 QTYPE_NS = 2
 QCLASS_IN = 1
-
-debug_hostname = None
 
 
 class DNSPackage:
@@ -51,7 +50,7 @@ class DNSPackage:
             offset += length
             answers.append(res)
 
-        return res_id, answers
+        return answers
 
     @staticmethod
     def _build_question(hostname):
@@ -76,11 +75,18 @@ class DNSPackage:
 
     # 解析域名
     @staticmethod
-    def _parse_name(data, offset):
+    def _parse_name(data, offset):  # 草！ name 压缩 字节首三位全 1
         p = offset
         labels = []
         length = int(data[p])
         while length > 0:
+            if (length & (3 << 6)) == (3 << 6):
+                pointer = struct.unpack('!H', data[p:p + 2])[0]
+                pointer &= 0x3FFF  # 14bits
+                r = DNSPackage._parse_name(data, pointer)
+                labels.append(r[1])
+                p += 2  # jump
+                return p - offset, '.'.join(labels)
             labels.append(data[p + 1:p + 1 + length].decode('utf-8'))
             p += 1 + length
             length = int(data[p])
@@ -88,7 +94,8 @@ class DNSPackage:
 
     @staticmethod
     def _parse_record_answer(data, offset):
-        nlen = 2
+        nlen, name = DNSPackage._parse_name(data, offset)
+
         record_type, record_class, record_ttl, record_rdlength = struct.unpack('!HHiH', data[offset + nlen:offset + nlen + 10])
         ip = DNSPackage._parse_ip(record_type, data, record_rdlength, offset + nlen + 10)
         return nlen + 10 + record_rdlength, ip  # 10=HHiH
@@ -181,24 +188,15 @@ class Item:
         if self.ip is None:
             logging.debug(f"{self.hostname:15}: fk GFW")
         else:
-            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}")
+            latency_sdu_net = ping3.ping(self.hostname)
+            if latency_sdu_net is None:
+                latency_sdu_net = "None"
+            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}   {latency_sdu_net * 1000}")
 
 
 def clean_hostname(hostname):
     hostname = hostname.strip('.')
     return hostname
-
-
-def _call_cb(callback, ip):
-    if ip is None:
-        callback(None, "gfw")
-    else:
-        callback(ip, None)
-
-
-def no_callback(result, error):
-    # print(result, error)
-    pass
 
 
 class DNSResolver(object):
@@ -217,19 +215,13 @@ class DNSResolver(object):
 
     # 处理 nameserver 返回的数据
     def _handle_data(self, data):
-        global debug_hostname
-        debug_hostname = data
-        header = DNSPackage._parse_header(data)
-        res_id, res_qr, res_tc, res_ra, res_rcode, res_qdcount, res_ancount, res_nscount, res_arcount = header
-        debug_hostname = [data, res_id, res_qr, res_tc, res_ra, res_rcode, res_qdcount, res_ancount, res_nscount, res_arcount]
-
-        req_id, ip_list = DNSPackage.parse_res(data)
+        req_id = int.from_bytes(data[:2], "big")
         if req_id not in self._id_to_nameserver:
             return
 
         hostname = self._id_to_hostname[req_id]
         nameserver = self._id_to_nameserver[req_id]
-
+        ip_list = DNSPackage.parse_res(data)
         item = self._hosts[hostname]
         item.count -= 1
 
@@ -244,7 +236,7 @@ class DNSResolver(object):
         del self._id_to_hostname[req_id]
 
         if item.count == 0:
-            item.calc_fastest_ip()
+            # item.calc_fastest_ip()
             item.status = STATUS.FINISH
 
     def handle_event(self, sock, fd, event):
@@ -252,11 +244,12 @@ class DNSResolver(object):
         self._handle_data(data)
 
     def handle_periodic(self):
-        with open('hosts', 'w', encoding='utf-8') as f:
-            for k, item in self._hosts.items():
-                if item.ip:
-                    f.write(f"{item.ip:<15} {k:<23} # {item.ip_to_latency[item.ip]:>6}ms, {item.ip_to_nameserver[item.ip]}\n")
+        # with open('hosts', 'w', encoding='utf-8') as f:
+        #     for k, item in self._hosts.items():
+        #         if item.ip:
+        #             f.write(f"{item.ip:<15} {k:<31} # {item.ip_to_latency[item.ip]:>6}ms, {item.ip_to_nameserver[item.ip]}\n")
         logging.info("hosts saved!")
+        self.work()
 
     def _send_req(self, nameserver, hostname):
         req_id = os.urandom(2)  # 无符号 2 个字节 = 16bit
@@ -302,6 +295,32 @@ class DNSResolver(object):
             self._socket.close()
             self._socket = None
 
+    def work(self):
+        hostnames = list(self._hosts.keys())
+        with open('hosts', 'w', encoding='utf-8') as f:
+
+            for hostname in hostnames:
+                ip_info = self._hosts[hostname]
+                # for (hostname, ip_info) in md.items():
+                ips = ip_info.ip_to_nameserver.keys()
+                ips = list(filter(lambda x: x is not None, ips))
+                if len(ips) < 1:
+                    logging.error(hostname, "len(ips) < 1")
+                    continue
+                min_latency = 1e9
+                best_ip = ""
+                print(hostname, ips)
+                for ip in ips:
+                    t = measure_latency(ip, wait=0, runs=5)
+                    for j in t:
+                        if j is None:
+                            continue
+                        if j < min_latency:
+                            min_latency = j
+                            best_ip = ip
+                # print(f"best_ip {best_ip},{min_latency}")
+                f.write(f"{best_ip:<15} {hostname:<23} # {min_latency:>6}ms, {ip_info.ip_to_nameserver[best_ip]}\n")
+
 
 def test():
     loop = eventloop.EventLoop()  # 创建 loop 实例
@@ -322,5 +341,12 @@ def test():
     # loop.stop()
 
 
+def test2():
+    data = b"\xf5\xbe\x81\x80\x00\x01\x00\x0b\x00\x02\x00\x06\x02s2\x05hdslb\x03com\x00\x00\x01\x00\x01\xc0\x0c\x00\x05\x00\x01\x00\x00\x00K\x00\n\x07bstatic\xc0\x0f\xc0*\x00\x05\x00\x01\x00\x00\x007\x00\x1a\x02s1\x05hdslb\x03com\x01w\x08kunlunar\xc0\x15\x02s1\x05hdslb\x03com\x01w\x08kunlunAr\xc0\x15\x00\x05\x00\x01\x00\x00\x00\x1e\x00/\x02s1\x05hdslb\x03com\x01w\x08kunlunar\x03com\x02fp\radhimalayandi\xc0\x15\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xe0\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xda\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdf\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdb\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdc\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdd\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xde\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xd9\xc0\x9a\x00\x02\x00\x01\x00\x00\t_\x00\x06\x03ns2\xc0\x9d\xc0\x9a\x00\x02\x00\x01\x00\x00\t_\x00\x06\x03ns1\xc0\x9d\xc1K\x00\x01\x00\x01\x00\x00\x0f\x8a\x00\x04e%\xb7\xe2\xc1K\x00\x01\x00\x01\x00\x00\x0f\x8a\x00\x04xL\x11\xe2\xc1K\x00\x01\x00\x01\x00\x00\x0f\x8a\x00\x04'`\x98b\xc19\x00\x01\x00\x01\x00\x00\x14\xc7\x00\x04xL\x11\xe2\xc19\x00\x01\x00\x01\x00\x00\x14\xc7\x00\x04'`\x98b\xc19\x00\x01\x00\x01\x00\x00\x14\xc7\x00\x04e%\xb7\xe2"
+    ip = DNSPackage.parse_res(data)
+    print(ip)
+
+
 if __name__ == '__main__':
-    test()
+    # test()
+    test2()
