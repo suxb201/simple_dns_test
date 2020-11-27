@@ -1,7 +1,6 @@
 # -*- coding:utf8 -*-
 from scapy.all import *
-from scapy.layers.dns import DNSRR, DNSQR
-import time
+from scapy.layers.dns import DNSRR
 import asyncdns
 import eventloop
 import threading

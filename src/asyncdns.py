@@ -9,7 +9,6 @@ from datetime import datetime
 from enum import Enum, unique
 from typing import Dict, Callable, Set, List
 import logging
-import ping3
 
 import eventloop
 from config import config
