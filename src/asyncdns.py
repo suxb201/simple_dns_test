@@ -295,23 +295,30 @@ class DNSResolver(object):
             self._socket.close()
             self._socket = None
 
-    def work(self):
-        hostnames = list(self._hosts.keys())
-        with open('hosts', 'w', encoding='utf-8') as f:
+    @staticmethod
+    def cy_sort(hostnames):
+        hostnames = list(map(lambda a: a[::-1], hostnames))
+        hostnames.sort()
+        hostnames = list(map(lambda a: a[::-1], hostnames))
+        return hostnames
 
+    def work(self):
+        hostnames = DNSResolver.cy_sort(self._hosts.keys())
+        with open('hosts', 'w', encoding='utf-8') as f:
             for hostname in hostnames:
                 ip_info = self._hosts[hostname]
+                if ip_info.status != STATUS.FINISH:
+                    continue
                 # for (hostname, ip_info) in md.items():
                 ips = ip_info.ip_to_nameserver.keys()
                 ips = list(filter(lambda x: x is not None, ips))
                 if len(ips) < 1:
-                    logging.error(hostname, "len(ips) < 1")
+                    logging.error(f"{hostname} len(ips) < 1")
                     continue
                 min_latency = 1e9
-                best_ip = ""
-                print(hostname, ips)
+                best_ip = None
                 for ip in ips:
-                    t = measure_latency(ip, wait=0, runs=5)
+                    t = measure_latency(ip, wait=0, runs=1)
                     for j in t:
                         if j is None:
                             continue
@@ -319,7 +326,8 @@ class DNSResolver(object):
                             min_latency = j
                             best_ip = ip
                 # print(f"best_ip {best_ip},{min_latency}")
-                f.write(f"{best_ip:<15} {hostname:<23} # {min_latency:>6}ms, {ip_info.ip_to_nameserver[best_ip]}\n")
+                if best_ip is not None:
+                    f.write(f"{best_ip:<15} {hostname:<23} # {min_latency:>6}ms, {ip_info.ip_to_nameserver[best_ip]}\n")
 
 
 def test():
