@@ -3,13 +3,16 @@ import socket
 
 
 def single_tcp(ip: str, port: int, timeout: float):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout)
-    startTime = time.time()
-    ans = sock.connect_ex((ip, int(port)))
-    sock.shutdown(socket.SHUT_RD)
-    endTime = time.time()
-    sock.close()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        startTime = time.time()
+        ans = sock.connect_ex((ip, int(port)))
+        sock.shutdown(socket.SHUT_RD)
+        endTime = time.time()
+        sock.close()
+    except:
+        endTime,startTime,ans=0,0,1
     return endTime - startTime if ans == 0 else 1e9
 
 
@@ -20,10 +23,10 @@ def spee_push_queue(hostname: str, ip: str, port: int, timeout: float):
     ans = single_tcp(ip, port, timeout)
     return {"hostname": hostname, "ip": ip, "time": ans}
 
-
+globalthreadPool=ThreadPoolExecutor(max_workers=10, thread_name_prefix="tcptest_")
 class SpeedTestThreadPool:
     def __init__(self):
-        self.threadPool = ThreadPoolExecutor(max_workers=10, thread_name_prefix="tcptest_")
+        self.threadPool = globalthreadPool
         self.taskList = []
 
 
@@ -37,8 +40,7 @@ class SpeedTestThreadPool:
         self.taskList.clear()
         return res
 
-    def __del__(self):
-        self.threadPool.shutdown(wait=False)
+
 
 def work(self):
     threadPool=SpeedTestThreadPool()
