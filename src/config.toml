@@ -3,7 +3,7 @@ port = 10009
 
 [dns]
 redis_cache = false # 使用 redis
-cache_time = 10 # 单位 s
+cache_time = 0 # 单位 s
 nameserver = [
     { ip = "1.2.4.8", describe = "cnnic(1.2.4.8)" },
     { ip = "114.114.114.114", describe = "114.114.114.114" },
