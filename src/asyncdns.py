@@ -186,10 +186,8 @@ class Item:
         if self.ip is None:
             logging.debug(f"{self.hostname:15}: fk GFW")
         else:
-            latency_sdu_net = ping3.ping(self.hostname)
-            if latency_sdu_net is None:
-                latency_sdu_net = "None"
-            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}   {latency_sdu_net * 1000}")
+
+            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}")
 
 
 def clean_hostname(hostname):
