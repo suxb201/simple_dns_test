@@ -14,6 +14,8 @@ import eventloop
 from config import config
 from tcp_latency import measure_latency
 
+from asynctcp.socket_tcp_test import SpeedTestThreadPool
+
 VALID_HOSTNAME = re.compile(r"(?!-)[A-Z\d\-_]{1,63}(?<!-)$", re.IGNORECASE)
 
 QTYPE_ANY = 255
@@ -145,6 +147,16 @@ class STATUS(Enum):
     FINISH = 3
 
 
+def timeShow(fn):
+    import time
+    def _wrapper(*args, **kwargs):
+        start = time.time()
+        ans = fn(*args, **kwargs)
+        print("%s cost %s second" % (fn.__name__, time.time() - start))
+        return ans
+
+    return _wrapper
+
 class Item:
     def __init__(self, hostname):
         self.hostname = hostname
@@ -161,6 +173,32 @@ class Item:
             return False
         return True
 
+    @timeShow
+    def calc_fastest_ip_fast(self):
+        self.timestamp = datetime.now().timestamp()
+        self.ip = None
+        threadPool=SpeedTestThreadPool()
+        num=len(list(filter(lambda x:x,self.ip_to_nameserver.keys())))
+        for k, v in self.ip_to_nameserver.items():
+            if k is None:continue
+            threadPool.testSpeed(self.hostname,k)
+        res=threadPool.wait()
+        for item in res:
+            ip,tmp_len=item["ip"],item["time"]
+            self.ip_to_latency[ip]=round(self.ip_to_latency.setdefault(ip,tmp_len)/2+tmp_len/2,2)
+
+        self.ip,min_latency=min(self.ip_to_latency.items(),key=lambda item:item[1],default=(None,1e9))
+
+        if self.ip is None:
+            logging.debug(f"{self.hostname:15}: fk GFW")
+        else:
+            latency_sdu_net = ping3.ping(self.hostname)
+            if latency_sdu_net is None:
+                latency_sdu_net = "None"
+            logging.debug(
+                f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}   {latency_sdu_net * 1000}")
+
+    @timeShow
     def calc_fastest_ip(self):
         self.timestamp = datetime.now().timestamp()
         min_latency = 1e9
@@ -231,7 +269,9 @@ class DNSResolver(object):
         del self._id_to_hostname[req_id]
 
         if item.count == 0:
-            item.calc_fastest_ip()
+            #这方法太慢啦!
+            # item.calc_fastest_ip()
+            item.calc_fastest_ip_fast()
             item.status = STATUS.FINISH
 
     def handle_event(self, sock, fd, event):
