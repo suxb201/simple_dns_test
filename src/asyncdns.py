@@ -157,6 +157,7 @@ def timeShow(fn):
 
     return _wrapper
 
+
 class Item:
     def __init__(self, hostname):
         self.hostname = hostname
@@ -177,26 +178,22 @@ class Item:
     def calc_fastest_ip_fast(self):
         self.timestamp = datetime.now().timestamp()
         self.ip = None
-        threadPool=SpeedTestThreadPool()
-        num=len(list(filter(lambda x:x,self.ip_to_nameserver.keys())))
+        threadPool = SpeedTestThreadPool()
+        num = len(list(filter(lambda x: x, self.ip_to_nameserver.keys())))
         for k, v in self.ip_to_nameserver.items():
-            if k is None:continue
-            threadPool.testSpeed(self.hostname,k)
-        res=threadPool.wait()
+            if k is None: continue
+            threadPool.testSpeed(self.hostname, k)
+        res = threadPool.wait()
         for item in res:
-            ip,tmp_len=item["ip"],item["time"]
-            self.ip_to_latency[ip]=round(self.ip_to_latency.setdefault(ip,tmp_len)/2+tmp_len/2,2)
+            ip, tmp_len = item["ip"], item["time"]
+            self.ip_to_latency[ip] = round(self.ip_to_latency.setdefault(ip, tmp_len) / 2 + tmp_len / 2, 2)
 
-        self.ip,min_latency=min(self.ip_to_latency.items(),key=lambda item:item[1],default=(None,1e9))
+        self.ip, min_latency = min(self.ip_to_latency.items(), key=lambda item: item[1], default=(None, 1e9))
 
         if self.ip is None:
             logging.debug(f"{self.hostname:15}: fk GFW")
         else:
-            latency_sdu_net = ping3.ping(self.hostname)
-            if latency_sdu_net is None:
-                latency_sdu_net = "None"
-            logging.debug(
-                f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}   {latency_sdu_net * 1000}")
+            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}")
 
     @timeShow
     def calc_fastest_ip(self):
@@ -269,7 +266,7 @@ class DNSResolver(object):
         del self._id_to_hostname[req_id]
 
         if item.count == 0:
-            #这方法太慢啦!
+            # 这方法测出的结果太慢啦!
             # item.calc_fastest_ip()
             item.calc_fastest_ip_fast()
             item.status = STATUS.FINISH
