@@ -164,23 +164,21 @@ class Item:
 
     def calc_fastest_ip(self):
         self.timestamp = datetime.now().timestamp()
-        min_latency = 999999
+        min_latency = 1e9
         self.ip = None
         for k, v in self.ip_to_nameserver.items():
             if k is None:
                 continue
-            try:
-                tmp_len = ping3.ping(k, timeout=2)
-            except OSError:
-                tmp_len = None
+            tmp_len = measure_latency(k, wait=0)[0]
             if tmp_len is None:
                 tmp_len = 999999
             if k not in self.ip_to_latency:
-                self.ip_to_latency[k] = round(tmp_len * 1000, 2)
+                self.ip_to_latency[k] = round(tmp_len, 2)
             else:
-                self.ip_to_latency[k] = self.ip_to_latency[k] + round(tmp_len * 1000, 2)
+                self.ip_to_latency[k] = self.ip_to_latency[k] + round(tmp_len, 2)
                 self.ip_to_latency[k] /= 2
                 self.ip_to_latency[k] = round(self.ip_to_latency[k], 2)
+
             if min_latency >= self.ip_to_latency[k]:
                 min_latency = self.ip_to_latency[k]
                 self.ip = k
@@ -236,7 +234,7 @@ class DNSResolver(object):
         del self._id_to_hostname[req_id]
 
         if item.count == 0:
-            # item.calc_fastest_ip()
+            item.calc_fastest_ip()
             item.status = STATUS.FINISH
 
     def handle_event(self, sock, fd, event):
@@ -244,12 +242,16 @@ class DNSResolver(object):
         self._handle_data(data)
 
     def handle_periodic(self):
-        # with open('hosts', 'w', encoding='utf-8') as f:
-        #     for k, item in self._hosts.items():
-        #         if item.ip:
-        #             f.write(f"{item.ip:<15} {k:<31} # {item.ip_to_latency[item.ip]:>6}ms, {item.ip_to_nameserver[item.ip]}\n")
-        logging.info("hosts saved!")
-        self.work()
+        write_to_file = []
+        hostnames = DNSResolver.cy_sort(self._hosts.keys())
+        for hostname in hostnames:
+            item = self._hosts[hostname]
+            if item.ip:
+                write_to_file.append(f"{item.ip:<15} {hostname:>31} # {item.ip_to_latency[item.ip]:>6}ms {sorted(list(item.ip_to_nameserver[item.ip]))}\n")
+        with open('hosts', 'w', encoding='utf-8') as f:
+            for item in write_to_file:
+                f.write(item)
+        logging.info("saved!")
 
     def _send_req(self, nameserver, hostname):
         req_id = os.urandom(2)  # 无符号 2 个字节 = 16bit
@@ -302,32 +304,38 @@ class DNSResolver(object):
         hostnames = list(map(lambda a: a[::-1], hostnames))
         return hostnames
 
-    def work(self):
-        hostnames = DNSResolver.cy_sort(self._hosts.keys())
-        with open('hosts', 'w', encoding='utf-8') as f:
-            for hostname in hostnames:
-                ip_info = self._hosts[hostname]
-                if ip_info.status != STATUS.FINISH:
-                    continue
-                # for (hostname, ip_info) in md.items():
-                ips = ip_info.ip_to_nameserver.keys()
-                ips = list(filter(lambda x: x is not None, ips))
-                if len(ips) < 1:
-                    logging.error(f"{hostname} len(ips) < 1")
-                    continue
-                min_latency = 1e9
-                best_ip = None
-                for ip in ips:
-                    t = measure_latency(ip, wait=0, runs=1)
-                    for j in t:
-                        if j is None:
-                            continue
-                        if j < min_latency:
-                            min_latency = j
-                            best_ip = ip
-                # print(f"best_ip {best_ip},{min_latency}")
-                if best_ip is not None:
-                    f.write(f"{best_ip:<15} {hostname:<23} # {min_latency:>6}ms, {ip_info.ip_to_nameserver[best_ip]}\n")
+    # def work(self):
+    #     hostnames = DNSResolver.cy_sort(self._hosts.keys())
+    #     write_to_file = []
+    #     logging.info("work in")
+    #     for hostname in hostnames:
+    #         ip_info = self._hosts[hostname]
+    #         if ip_info.status != STATUS.FINISH:
+    #             continue
+    #         # for (hostname, ip_info) in md.items():
+    #         ips = ip_info.ip_to_nameserver.keys()
+    #         ips = list(filter(lambda x: x is not None, ips))
+    #         logging.info(f"{hostname} {ips}")
+    #         if len(ips) < 1:
+    #             logging.error(f"{hostname} len(ips) < 1")
+    #             continue
+    #         min_latency = 1e9
+    #         best_ip = None
+    #         for ip in ips:
+    #             t = measure_latency(ip, wait=0, runs=1)
+    #             for j in t:
+    #                 if j is None:
+    #                     continue
+    #                 if j < min_latency:
+    #                     min_latency = j
+    #                     best_ip = ip
+    #         logging.info(f"best_ip {best_ip},{min_latency}")
+    #         if best_ip is not None:
+    #             write_to_file.append(f"{best_ip:<15} {hostname:>31} # {round(min_latency):>6}ms {sorted(list(ip_info.ip_to_nameserver[best_ip]))}\n")
+    #     logging.info("save")
+    #     with open('hosts', 'w', encoding='utf-8') as f:
+    #         for item in write_to_file:
+    #             f.write(item)
 
 
 def test():
