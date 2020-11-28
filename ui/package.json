@@ -1,0 +1,27 @@
+{
+  "name": "ui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-python": "pyinstaller -F ../src/main.py --clean --distpath ./pydist",
+    "pack-app": "./node_modules/.bin/electron-packager . --overwrite --ignore=\"(dist|docs|.gitignore|LICENSE|README.md|webpack.config.js|node_modules)\" ",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.sxb.app",
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    }
+  },
+  "author": "",
+  "devDependencies": {
+    "electron": "^11.0.3",
+    "electron-builder": "^22.9.1",
+    "electron-packager": "^15.1.0"
+  }
+}
