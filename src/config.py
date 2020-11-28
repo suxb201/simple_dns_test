@@ -1,5 +1,10 @@
 import toml
 
-with open("config.toml", encoding='utf-8') as f:
-    config = toml.loads(f.read())
+config = {}
 
+
+def read_config(config_file):
+    with open(config_file, encoding='utf-8') as f:
+        tmp_config = toml.loads(f.read())
+        for k, v in tmp_config.items():
+            config[k] = v

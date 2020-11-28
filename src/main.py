@@ -4,6 +4,9 @@ from scapy.layers.dns import DNSRR
 import asyncdns
 import eventloop
 import threading
+import argparse
+import logging
+import config
 
 dns_resolver: asyncdns.DNSResolver = None
 
@@ -29,4 +32,15 @@ if __name__ == "__main__":
         level=logging.INFO,
         format='%(filename)13s : %(levelname)6s  %(message)s'
     )
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--config_file",
+                        help="increase output verbosity",
+                        default="./config.toml")
+    args = parser.parse_args()
+    logging.info(f'args: {args}')
+    config.read_config(args.config_file)
+
+
+
     main()
