@@ -128,6 +128,9 @@ export default {
             filestr = toml.stringify(data);
             //写入
             fs.writeFileSync(configpath, filestr);
+            //重启
+            ipcRenderer.send("stop")
+            setTimeout(()=>{ipcRenderer.send("start")},1000)
         });
 
         return {
