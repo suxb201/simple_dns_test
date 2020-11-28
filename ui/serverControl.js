@@ -15,12 +15,7 @@ button.addEventListener('click', () => {
         console.log('child process success')
     }
     console.log(pyProc)
-    pyProc.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-    });
-    pyProc.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+
     pyProc.on('close', (code) => {
         console.log(`子进程退出，退出码 ${code}`);
     });

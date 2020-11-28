@@ -2,26 +2,47 @@
   "name": "ui",
   "version": "1.0.0",
   "description": "",
-  "main": "main.js",
+  "main": "app.js",
   "scripts": {
-    "start": "electron .",
+    "start": "cross-env NODE_ENV=development electron .   ",
     "build-python": "pyinstaller -F ../src/main.py --clean --distpath ./pydist",
     "pack-app": "./node_modules/.bin/electron-packager . --overwrite --ignore=\"(dist|docs|.gitignore|LICENSE|README.md|webpack.config.js|node_modules)\" ",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dev": "cross-env NODE_ENV=development vite",
+    "build": "vite build"
   },
   "build": {
+    "files": [
+      "!node_modules/*"
+    ],
     "appId": "com.sxb.app",
+    "asar": true,
+    "directories": {
+      "output": "build"
+    },
     "win": {
       "target": [
         "nsis",
         "zip"
-      ]
+      ],
+      "extraResources": {
+        "from": "./pyexe/",
+        "to": "pyexe"
+      }
     }
   },
   "author": "",
   "devDependencies": {
+    "cross-env": "^7.0.2",
     "electron": "^11.0.3",
     "electron-builder": "^22.9.1",
-    "electron-packager": "^15.1.0"
+    "electron-packager": "^15.1.0",
+    "vite": "^1.0.0-rc.8",
+    "@vue/compiler-sfc": "^3.0.2"
+  },
+  "dependencies": {
+    "ant-design-vue": "^2.0.0-beta.10",
+    "toml": "^3.0.0",
+    "vue": "^3.0.2"
   }
 }

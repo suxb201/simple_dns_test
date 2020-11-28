@@ -1,6 +1,3 @@
-import sys
-
-
 def config_generater(read_file, write_file):
     ans: list = list()
     with open(read_file, 'r') as hostfile:
@@ -12,4 +9,5 @@ def config_generater(read_file, write_file):
         for info1 in ans:
             configfile.write(info1)
 
-config_generater("hosts.txt","dns.conf")
+
+# config_generater("hosts.txt", "dns.conf")
