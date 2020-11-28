@@ -7,14 +7,12 @@ import struct
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum, unique
-from typing import Dict, Callable, Set, List
+from typing import Dict, Set, List
 import logging
 
 import eventloop
 from config import config
-from tcp_latency import measure_latency
-
-from asynctcp.socket_tcp_test import SpeedTestThreadPool
+from tcp_latency import TCPLatency
 
 VALID_HOSTNAME = re.compile(r"(?!-)[A-Z\d\-_]{1,63}(?<!-)$", re.IGNORECASE)
 
@@ -147,22 +145,11 @@ class STATUS(Enum):
     FINISH = 3
 
 
-def timeShow(fn):
-    import time
-    def _wrapper(*args, **kwargs):
-        start = time.time()
-        ans = fn(*args, **kwargs)
-        print("%s cost %s second" % (fn.__name__, time.time() - start))
-        return ans
-
-    return _wrapper
-
-
 class Item:
     def __init__(self, hostname):
         self.hostname = hostname
         self.status = STATUS.INIT  # 0: 刚初始化，1：在跑，2：已跑出结果
-        self.ip: str = ""
+        self.ip = None
         self.count: int = 0
         self.timestamp: float = 0
 
@@ -174,54 +161,24 @@ class Item:
             return False
         return True
 
-    @timeShow
+    # @timeShow
     def calc_fastest_ip_fast(self):
         self.timestamp = datetime.now().timestamp()
         self.ip = None
-        threadPool = SpeedTestThreadPool()
-        num = len(list(filter(lambda x: x, self.ip_to_nameserver.keys())))
-        for k, v in self.ip_to_nameserver.items():
-            if k is None: continue
-            threadPool.testSpeed(self.hostname, k)
-        res = threadPool.wait()
-        for item in res:
-            ip, tmp_len = item["ip"], item["time"]
-            self.ip_to_latency[ip] = round(self.ip_to_latency.setdefault(ip, tmp_len) / 2 + tmp_len / 2, 2)
-
-        self.ip, min_latency = min(self.ip_to_latency.items(), key=lambda item: item[1], default=(None, 1e9))
-
+        tcp_latency = TCPLatency()
+        for ip in self.ip_to_nameserver.keys():
+            tcp_latency.test(ip, runs=5)
+        res = tcp_latency.wait()
+        for ip, latency in res:
+            if latency is not None:
+                self.ip_to_latency[ip] = round(self.ip_to_latency.setdefault(ip, latency) / 2 + latency / 2, 2)
+        print(self.ip_to_latency)
+        self.ip, min_latency = min(self.ip_to_latency.items(), key=lambda x: x[1], default=(None, 1e9))
+        logging.info(f'{self.hostname}: ip count: {len(self.ip_to_nameserver)}')
         if self.ip is None:
             logging.debug(f"{self.hostname:15}: fk GFW")
         else:
-            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}")
-
-    @timeShow
-    def calc_fastest_ip(self):
-        self.timestamp = datetime.now().timestamp()
-        min_latency = 1e9
-        self.ip = None
-        for k, v in self.ip_to_nameserver.items():
-            if k is None:
-                continue
-            tmp_len = measure_latency(k, wait=0)[0]
-            if tmp_len is None:
-                tmp_len = 999999
-            if k not in self.ip_to_latency:
-                self.ip_to_latency[k] = round(tmp_len, 2)
-            else:
-                self.ip_to_latency[k] = self.ip_to_latency[k] + round(tmp_len, 2)
-                self.ip_to_latency[k] /= 2
-                self.ip_to_latency[k] = round(self.ip_to_latency[k], 2)
-
-            if min_latency >= self.ip_to_latency[k]:
-                min_latency = self.ip_to_latency[k]
-                self.ip = k
-
-        if self.ip is None:
-            logging.debug(f"{self.hostname:15}: fk GFW")
-        else:
-
-            logging.debug(f"{self.hostname:30}: best ip: {self.ip}, latency: {self.ip_to_latency[self.ip]}")
+            logging.debug(f"{self.hostname:57}: best ip: {self.ip}, latency: {min_latency}")
 
 
 def clean_hostname(hostname):
@@ -234,6 +191,7 @@ class DNSResolver(object):
     def __init__(self, loop):
 
         self._hosts: Dict[str, Item] = dict()
+        self._exclude: Set[str] = set()
         self._id_to_hostname: Dict[int, str] = dict()
         self._id_to_nameserver: Dict[int, dict] = dict()
         # ---- loop ----
@@ -258,6 +216,8 @@ class DNSResolver(object):
         # print("结果", ip_list, item.hostname, nameserver)
 
         for ip in ip_list:
+            if ip is None:
+                continue
             if ip not in item.ip_to_nameserver:
                 item.ip_to_nameserver[ip] = set()
             item.ip_to_nameserver[ip].add(nameserver['describe'])
@@ -280,12 +240,12 @@ class DNSResolver(object):
         hostnames = DNSResolver.cy_sort(self._hosts.keys())
         for hostname in hostnames:
             item = self._hosts[hostname]
-            if item.ip:
+            if item.ip is not None:
                 write_to_file.append(f"{item.ip:<15} {hostname:>31} # {item.ip_to_latency[item.ip]:>6}ms {sorted(list(item.ip_to_nameserver[item.ip]))}\n")
-        with open('hosts', 'w', encoding='utf-8') as f:
+        with open(config['dns']['file_name'], 'w', encoding='utf-8') as f:
             for item in write_to_file:
                 f.write(item)
-        logging.info("saved!")
+        logging.debug("saved!")
 
     def _send_req(self, nameserver, hostname):
         req_id = os.urandom(2)  # 无符号 2 个字节 = 16bit
@@ -303,9 +263,7 @@ class DNSResolver(object):
         # 去除首尾 .
         hostname = clean_hostname(hostname)
 
-        if hostname not in self._hosts:
-            self._hosts[hostname] = Item(hostname)
-        item = self._hosts[hostname]
+        item = self._hosts.setdefault(hostname, Item(hostname))
 
         if item.status == STATUS.INIT:
             for nameserver in config['dns']['nameserver']:
@@ -376,7 +334,6 @@ def test():
     loop = eventloop.EventLoop()  # 创建 loop 实例
     dns_resolver = DNSResolver(loop)  # 创建实例
 
-    # dns_resolver.resolve('leplayer.vgs.lenovo.com.cn')
     # dns_resolver.resolve('google.com')
     # dns_resolver.resolve('example.com')
     # dns_resolver.resolve('ipv6.google.com')
@@ -384,19 +341,12 @@ def test():
     # dns_resolver.resolve('ns2.google.com', make_callback())
     # dns_resolver.resolve('invalid.@!#$%^&$@.hostname', make_callback())
     # dns_resolver.resolve('baidu.com', make_callback())
-    dns_resolver.resolve('s1.hdslb.com')
+    dns_resolver.resolve('www.aliyun.com')
     loop.run()  # rua！
 
     # dns_resolver.close()
     # loop.stop()
 
 
-def test2():
-    data = b"\xf5\xbe\x81\x80\x00\x01\x00\x0b\x00\x02\x00\x06\x02s2\x05hdslb\x03com\x00\x00\x01\x00\x01\xc0\x0c\x00\x05\x00\x01\x00\x00\x00K\x00\n\x07bstatic\xc0\x0f\xc0*\x00\x05\x00\x01\x00\x00\x007\x00\x1a\x02s1\x05hdslb\x03com\x01w\x08kunlunar\xc0\x15\x02s1\x05hdslb\x03com\x01w\x08kunlunAr\xc0\x15\x00\x05\x00\x01\x00\x00\x00\x1e\x00/\x02s1\x05hdslb\x03com\x01w\x08kunlunar\x03com\x02fp\radhimalayandi\xc0\x15\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xe0\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xda\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdf\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdb\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdc\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xdd\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xde\xc0~\x00\x01\x00\x01\x00\x00\x003\x00\x04x\xdd\xf9\xd9\xc0\x9a\x00\x02\x00\x01\x00\x00\t_\x00\x06\x03ns2\xc0\x9d\xc0\x9a\x00\x02\x00\x01\x00\x00\t_\x00\x06\x03ns1\xc0\x9d\xc1K\x00\x01\x00\x01\x00\x00\x0f\x8a\x00\x04e%\xb7\xe2\xc1K\x00\x01\x00\x01\x00\x00\x0f\x8a\x00\x04xL\x11\xe2\xc1K\x00\x01\x00\x01\x00\x00\x0f\x8a\x00\x04'`\x98b\xc19\x00\x01\x00\x01\x00\x00\x14\xc7\x00\x04xL\x11\xe2\xc19\x00\x01\x00\x01\x00\x00\x14\xc7\x00\x04'`\x98b\xc19\x00\x01\x00\x01\x00\x00\x14\xc7\x00\x04e%\xb7\xe2"
-    ip = DNSPackage.parse_res(data)
-    print(ip)
-
-
 if __name__ == '__main__':
-    # test()
-    test2()
+    test()
