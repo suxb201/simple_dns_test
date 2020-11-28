@@ -1,21 +1,16 @@
-import path from 'path'
-const root = path.join(__dirname, 'src')
+import path from "path";
+const root = path.join(__dirname, "src");
 export default {
-    base:'./',
-    outDir:"dist",
+    base: "./",
+    outDir: "dist",
     alias: {
         // 别名必须以 / 开头、结尾
-        '/@/': root,
+        "/@/": root,
     },
-    rollupInputOptions:{
-        external:[
-            'fs',
-            'path',
-            'stream',
-            'electron',
-        ]
+    rollupInputOptions: {
+        external: ["fs", "path", "stream", "electron"],
     },
     rollupOutputOptions: {
-        format: 'commonjs',
-    }
-}
+        format: "commonjs",
+    },
+};
