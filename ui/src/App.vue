@@ -21,7 +21,14 @@
         </template>
       </a-table>
     </a-layout-content>
-    <a-layout-footer>Footer</a-layout-footer>
+    <a-layout-footer>
+
+      <a-space>
+        <a-input placeholder='dns ip' v-model:value="addnewdata.nameserver"></a-input>
+        <a-input placeholder='备注' v-model:value="addnewdata.ps"></a-input>
+        <a-button @click="addDnsServer">添加</a-button>
+      </a-space>
+    </a-layout-footer>
   </a-layout>
 </template>
 <style scoped>
@@ -30,7 +37,7 @@
 }
 </style>
 <script>
-import {inject, reactive} from "vue"
+import {inject, reactive, onBeforeMount, watch} from "vue"
 
 export default {
   name: 'App',
@@ -42,27 +49,51 @@ export default {
     }
     //表头
     const columns = [{dataIndex: 'nameserver', title: "ip"},
-      {dataIndex: '备注'},
+      {dataIndex: 'ps',title:"备注"},
       {title: 'op', slots: {customRender: 'op'}}]
     //表格数据
     const tableData = reactive([
       {
         nameserver: "1.1.1.1",
-        备注: '阿巴阿巴',
+        ps:'阿巴阿巴',
       },
       {
         nameserver: "1.1.1.2.3",
-        备注: '阿巴阿巴',
+        ps: '阿巴阿巴',
       },
     ])
-    const deleteDnsServer=(data)=>{
-      const index=tableData.findIndex(t=>t.nameserver===data.nameserver)
-      //删掉 响应式
-      tableData.splice(index,1)
 
+    //挂载之前的声明周期 读入配置文件 向tabledata中添加数据
+    onBeforeMount(() => {
+
+    })
+
+    //删除dns view
+    const deleteDnsServer = (data) => {
+      const index = tableData.findIndex(t => t.nameserver === data.nameserver)
+      //删掉 响应式
+      tableData.splice(index, 1)
     }
 
-    return {startbutton, tableData, columns,deleteDnsServer}
+    //添加dns view
+    const addnewdata=reactive({nameserver:"",ps:""})
+    const addDnsServer=()=>{
+      if(tableData.find(t => t.nameserver === addnewdata.nameserver)){
+        message.warning("加过了 球球了别加了")
+        return
+      }
+      tableData.push({
+       ...addnewdata
+      })
+    }
+    //配置文件响应式 负责重启服务以及更改config
+    watch(tableData, () => {
+      //当tabledata有任何形式的更改时 都可以在这里进行回调
+      console.log("tabledata changed")
+
+    })
+
+    return {startbutton, tableData, columns, deleteDnsServer,addDnsServer,addnewdata}
   }
 }
 </script>
