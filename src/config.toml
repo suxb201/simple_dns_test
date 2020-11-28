@@ -2,8 +2,10 @@
 port = 10009
 
 [dns]
+temp_file_name = "temp_data.pkl"
+file_name = "hosts"
 redis_cache = false # 使用 redis
-cache_time = 0 # 单位 s
+cache_time = 3 # 单位 s
 nameserver = [
     { ip = "1.2.4.8", describe = "cnnic(1.2.4.8)" },
     { ip = "114.114.114.114", describe = "114.114.114.114" },

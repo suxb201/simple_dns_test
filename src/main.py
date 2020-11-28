@@ -1,7 +1,6 @@
 # -*- coding:utf8 -*-
 from scapy.all import *
-from scapy.layers.dns import DNSRR, DNSQR
-import time
+from scapy.layers.dns import DNSRR
 import asyncdns
 import eventloop
 import threading
@@ -27,7 +26,7 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='%(filename)13s : %(levelname)6s  %(message)s'
     )
     main()
