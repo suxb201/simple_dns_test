@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .   ",
-    "build-python": "pyinstaller -F ../src/main.py --clean --distpath ./pydist",
+    "build-python": "pyinstaller ../src/main.py --clean --distpath ./pydist",
     "pack-app": "./node_modules/.bin/electron-packager . --overwrite --ignore=\"(dist|docs|.gitignore|LICENSE|README.md|webpack.config.js|node_modules)\" ",
     "dist": "electron-builder",
     "dev": "cross-env NODE_ENV=development vite",
@@ -41,8 +41,8 @@
     "@vue/compiler-sfc": "^3.0.2"
   },
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
     "ant-design-vue": "^2.0.0-beta.10",
-    "toml": "^3.0.0",
     "vue": "^3.0.2"
   }
 }
