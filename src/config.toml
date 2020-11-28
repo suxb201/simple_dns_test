@@ -2,7 +2,8 @@
 port = 10009
 
 [dns]
-file_name = "hosts_best"
+temp_file_name = "temp_data.pkl"
+file_name = "hosts"
 redis_cache = false # 使用 redis
 cache_time = 3 # 单位 s
 nameserver = [

@@ -9,10 +9,11 @@ from datetime import datetime
 from enum import Enum, unique
 from typing import Dict, Set, List
 import logging
-
+import pickle
 import eventloop
 from config import config
 from tcp_latency import TCPLatency
+import os
 
 VALID_HOSTNAME = re.compile(r"(?!-)[A-Z\d\-_]{1,63}(?<!-)$", re.IGNORECASE)
 
@@ -172,7 +173,7 @@ class Item:
         for ip, latency in res:
             if latency is not None:
                 self.ip_to_latency[ip] = round(self.ip_to_latency.setdefault(ip, latency) / 2 + latency / 2, 2)
-        print(self.ip_to_latency)
+
         self.ip, min_latency = min(self.ip_to_latency.items(), key=lambda x: x[1], default=(None, 1e9))
         logging.info(f'{self.hostname}: ip count: {len(self.ip_to_nameserver)}')
         if self.ip is None:
@@ -191,6 +192,10 @@ class DNSResolver(object):
     def __init__(self, loop):
 
         self._hosts: Dict[str, Item] = dict()
+        if os.path.exists(config['dns']['temp_file_name']):
+            with open(config['dns']['temp_file_name'], 'rb') as f:
+                self._hosts = pickle.load(f)
+                logging.info(f'load {len(self._hosts)} hostnames.')
         self._exclude: Set[str] = set()
         self._id_to_hostname: Dict[int, str] = dict()
         self._id_to_nameserver: Dict[int, dict] = dict()
@@ -213,8 +218,6 @@ class DNSResolver(object):
         item = self._hosts[hostname]
         item.count -= 1
 
-        # print("结果", ip_list, item.hostname, nameserver)
-
         for ip in ip_list:
             if ip is None:
                 continue
@@ -226,8 +229,6 @@ class DNSResolver(object):
         del self._id_to_hostname[req_id]
 
         if item.count == 0:
-            # 这方法测出的结果太慢啦!
-            # item.calc_fastest_ip()
             item.calc_fastest_ip_fast()
             item.status = STATUS.FINISH
 
@@ -246,6 +247,9 @@ class DNSResolver(object):
             for item in write_to_file:
                 f.write(item)
         logging.debug("saved!")
+
+        with open(config['dns']['temp_file_name'], 'wb') as f:
+            pickle.dump(self._hosts, f)
 
     def _send_req(self, nameserver, hostname):
         req_id = os.urandom(2)  # 无符号 2 个字节 = 16bit
@@ -296,56 +300,13 @@ class DNSResolver(object):
         hostnames = list(map(lambda a: a[::-1], hostnames))
         return hostnames
 
-    # def work(self):
-    #     hostnames = DNSResolver.cy_sort(self._hosts.keys())
-    #     write_to_file = []
-    #     logging.info("work in")
-    #     for hostname in hostnames:
-    #         ip_info = self._hosts[hostname]
-    #         if ip_info.status != STATUS.FINISH:
-    #             continue
-    #         # for (hostname, ip_info) in md.items():
-    #         ips = ip_info.ip_to_nameserver.keys()
-    #         ips = list(filter(lambda x: x is not None, ips))
-    #         logging.info(f"{hostname} {ips}")
-    #         if len(ips) < 1:
-    #             logging.error(f"{hostname} len(ips) < 1")
-    #             continue
-    #         min_latency = 1e9
-    #         best_ip = None
-    #         for ip in ips:
-    #             t = measure_latency(ip, wait=0, runs=1)
-    #             for j in t:
-    #                 if j is None:
-    #                     continue
-    #                 if j < min_latency:
-    #                     min_latency = j
-    #                     best_ip = ip
-    #         logging.info(f"best_ip {best_ip},{min_latency}")
-    #         if best_ip is not None:
-    #             write_to_file.append(f"{best_ip:<15} {hostname:>31} # {round(min_latency):>6}ms {sorted(list(ip_info.ip_to_nameserver[best_ip]))}\n")
-    #     logging.info("save")
-    #     with open('hosts', 'w', encoding='utf-8') as f:
-    #         for item in write_to_file:
-    #             f.write(item)
-
 
 def test():
     loop = eventloop.EventLoop()  # 创建 loop 实例
     dns_resolver = DNSResolver(loop)  # 创建实例
 
-    # dns_resolver.resolve('google.com')
-    # dns_resolver.resolve('example.com')
-    # dns_resolver.resolve('ipv6.google.com')
-    # dns_resolver.resolve('www.facebook.com', make_callback())
-    # dns_resolver.resolve('ns2.google.com', make_callback())
-    # dns_resolver.resolve('invalid.@!#$%^&$@.hostname', make_callback())
-    # dns_resolver.resolve('baidu.com', make_callback())
     dns_resolver.resolve('www.aliyun.com')
     loop.run()  # rua！
-
-    # dns_resolver.close()
-    # loop.stop()
 
 
 if __name__ == '__main__':
