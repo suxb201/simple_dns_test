@@ -6,17 +6,17 @@
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .   ",
     "build-python": "pyinstaller ../src/main.py --clean --distpath ./pydist",
-    "pack-app": "./node_modules/.bin/electron-packager . --overwrite --ignore=\"(dist|docs|.gitignore|LICENSE|README.md|webpack.config.js|node_modules)\" ",
     "dist": "electron-builder",
     "dev": "cross-env NODE_ENV=development vite",
-    "build": "vite build"
+    "build": "vite build",
+    "buildall": "vite build &&  electron-builder"
   },
   "build": {
     "files": [
       "!node_modules/*"
     ],
     "appId": "com.sxb.app",
-    "asar": true,
+    "asar": false,
     "directories": {
       "output": "build"
     },
@@ -33,12 +33,17 @@
   },
   "author": "",
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^15.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
+    "@rollup/plugin-alias": "^3.1.1",
+    "rollup-plugin-esbuild": "^2.4.2",
+    "@vue/compiler-sfc": "^3.0.2",
     "cross-env": "^7.0.2",
     "electron": "^11.0.3",
     "electron-builder": "^22.9.1",
     "electron-packager": "^15.1.0",
-    "vite": "^1.0.0-rc.8",
-    "@vue/compiler-sfc": "^3.0.2"
+    "vite": "^1.0.0-rc.8"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5",

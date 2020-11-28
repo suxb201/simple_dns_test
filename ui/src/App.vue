@@ -2,7 +2,7 @@
     <a-layout style="height: 100%">
         <a-layout-header class="header">
             <a-space :size="middle">
-                <a-button @click="startbutton">启动</a-button>
+                <a-button @click="startbutton">{{serverButtonShow}}</a-button>
                 <a-button>应用hosts</a-button>
                 <a-button>恢复hosts</a-button>
             </a-space>
@@ -42,7 +42,7 @@
 }
 </style>
 <script>
-import { inject, reactive, onBeforeMount, watch } from "vue";
+import { ref,inject, reactive, onBeforeMount, watch } from "vue";
 
 function getpath(pathname) {
     const path = require("path");
@@ -56,9 +56,18 @@ export default {
     name: "App",
     setup() {
         const message = inject("message");
-
+        const serverButtonShow=ref("启动")
+        const ipcRenderer=require("electron").ipcRenderer
         const startbutton = () => {
+          if(serverButtonShow.value==="启动"){
             message.success("冲!");
+            ipcRenderer.send("start")
+            serverButtonShow.value="关闭"
+          }else{
+            ipcRenderer.send("stop")
+            serverButtonShow.value="启动"
+            message.warning("停!")
+          }
         };
         //表头
         const columns = [
@@ -128,6 +137,7 @@ export default {
             deleteDnsServer,
             addDnsServer,
             addnewdata,
+          serverButtonShow,
         };
     },
 };

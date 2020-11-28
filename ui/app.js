@@ -17,9 +17,24 @@ function createWindow() {
     // 然后加载应用的 index.html。
     win.loadURL(url)
     win.webContents.openDevTools()
-    app.on('will-quit', () => {
-        win.webContents.send("exit")
+    const {ipcMain}=require('electron')
+    let pyProc
+    ipcMain.on('start',()=>{
+        console.log("启动!")
+        if(!pyProc || pyProc.killed){
+            pyProc=require("./subprocess.js").proc
+        }
+        if (pyProc != null) {
+            console.log('child process success')
+        }
     })
+    const stop=()=>{
+        if(pyProc){
+            pyProc.kill()
+        }
+    }
+    ipcMain.on('stop',stop)
+    app.on('will-quit', stop)
 
 }
 
