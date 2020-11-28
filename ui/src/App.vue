@@ -39,6 +39,14 @@
 <script>
 import {inject, reactive, onBeforeMount, watch} from "vue"
 
+function getpath(pathname){
+  const path=require("path")
+  let templateFilePath = path.join(process.cwd(), '/resources/',pathname)
+  if (process.env.NODE_ENV === 'development') {
+    templateFilePath = path.join(process.cwd(), pathname)
+  }
+  return templateFilePath
+}
 export default {
   name: 'App',
   setup() {
@@ -90,6 +98,15 @@ export default {
     watch(tableData, () => {
       //当tabledata有任何形式的更改时 都可以在这里进行回调
       console.log("tabledata changed")
+      const fs=require("fs")
+      console.log(fs)
+      const configpath=getpath("pyexe/config.toml")
+      console.log(configpath)
+      const filestr=fs.readFileSync(configpath,{encoding:'utf-8' })
+      console.log(filestr)
+
+      //写入
+      fs.writeFileSync(configpath,filestr)
 
     })
 
