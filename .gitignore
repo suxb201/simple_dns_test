@@ -134,3 +134,6 @@ dmypy.json
 src/hosts
 ui/pydist/main.exe
 *.exe
+ui/hosts
+ui/hosts
+*.pkl
