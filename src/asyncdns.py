@@ -175,6 +175,7 @@ class Item:
                 self.ip_to_latency[ip] = round(self.ip_to_latency.setdefault(ip, latency) / 2 + latency / 2, 2)
 
         self.ip, min_latency = min(self.ip_to_latency.items(), key=lambda x: x[1], default=(None, 1e9))
+
         logging.info(f'{self.hostname}: ip count: {len(self.ip_to_nameserver)}')
         if self.ip is None:
             logging.debug(f"{self.hostname:15}: fk GFW")
@@ -242,7 +243,10 @@ class DNSResolver(object):
         for hostname in hostnames:
             item = self._hosts[hostname]
             if item.ip is not None:
-                write_to_file.append(f"{item.ip:<15} {hostname:>31} # {item.ip_to_latency[item.ip]:>6}ms {sorted(list(item.ip_to_nameserver[item.ip]))}\n")
+                if len(hostname) > 30:
+                    write_to_file.append(f"{item.ip:<15} {hostname:>51} # {item.ip_to_latency[item.ip]:>6}ms {list(reversed(sorted(list(item.ip_to_nameserver[item.ip]))))}\n")
+                else:
+                    write_to_file.append(f"{item.ip:<15} {hostname:>31} # {item.ip_to_latency[item.ip]:>6}ms {list(reversed(sorted(list(item.ip_to_nameserver[item.ip]))))}\n")
         with open(config['dns']['file_name'], 'w', encoding='utf-8') as f:
             for item in write_to_file:
                 f.write(item)
