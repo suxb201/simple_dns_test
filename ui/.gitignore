@@ -1,3 +1,7 @@
 /node_modules
 /ui-win32-x64/
 /pyexe/main
+node_modules
+.DS_Store
+dist
+*.local
