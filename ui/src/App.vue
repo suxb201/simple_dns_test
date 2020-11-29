@@ -173,6 +173,7 @@ export default {
       const clearhost=()=>{
         ipcRenderer.send("stop")
         ipcRenderer.send("clear")
+        serverButtonShow.value="启动"
       }
         return {
             startbutton,
