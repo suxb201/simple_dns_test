@@ -1,14 +1,14 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import './index.css'
+import { createApp } from "vue"
+import App from "./App.vue"
+import "./index.css"
 
 import Antd from "ant-design-vue"
-import 'ant-design-vue/dist/antd.css'
+import "ant-design-vue/dist/antd.css"
 const app = createApp(App)
 
-app.config.productionTip=false
-import {message} from "ant-design-vue"
+app.config.productionTip = false
+import { message } from "ant-design-vue"
 app.use(Antd)
-app.provide("message",message)
+app.provide("message", message)
 
-app.mount('#app')
+app.mount("#app")
