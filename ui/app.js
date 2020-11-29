@@ -62,6 +62,7 @@ function createWindow() {
     ipcMain.on("clear", ()=>{
         try{
             fs.copyFileSync(path.join(hostpath, 'hosts.bak'),path.join(hostpath, 'hosts'))
+            fs.rmdirSync(path.join(hostpath, 'hosts.bak'))
         }catch (e){console.log(e)}
     })
     app.on("will-quit", stop)
