@@ -21,6 +21,7 @@
       "output": "build"
     },
     "win": {
+      "requestedExecutionLevel": "highestAvailable",
       "target": [
         "nsis",
         "zip"

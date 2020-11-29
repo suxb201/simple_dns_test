@@ -1,5 +1,7 @@
-const { app, BrowserWindow, ipcMain, Menu } = require("electron")
+const {app, BrowserWindow, ipcMain, Menu} = require("electron")
 const path = require("path")
+const hostpath = path.join(process.env.windir, 'System32', 'drivers', 'etc')
+const fs = require('fs')
 
 function createWindow() {
     // 创建浏览器窗口
@@ -27,21 +29,41 @@ function createWindow() {
     win.webContents.openDevTools()
 
     let pyProc
+    let interval
     ipcMain.on("start", () => {
         console.log("启动!")
         if (!pyProc || pyProc.killed) {
+            if (!fs.existsSync(path.join(hostpath, 'hosts.bak')) &&fs.existsSync(path.join(hostpath, 'hosts')) ) {
+                fs.copyFileSync(path.join(hostpath, 'hosts'), path.join(hostpath, 'hosts.bak'))
+                console.log("备份完成")
+            }
             pyProc = require("./subprocess.js").proc
+            if (interval) clearInterval(interval)
+            interval = setInterval(() => {
+                if (fs.existsSync(path.join(process.cwd(), "hosts"))){
+                    fs.copyFileSync(path.join(process.cwd(), "hosts"), path.join(hostpath, 'hosts'))
+                    console.log("写入hosts")
+                }
+            }, 10 * 1000);
         }
         if (pyProc != null) {
             console.log("child process success")
         }
     })
     const stop = () => {
+        if (interval) clearInterval(interval)
+        interval=null
         if (pyProc) {
+
             pyProc.kill()
         }
     }
     ipcMain.on("stop", stop)
+    ipcMain.on("clear", ()=>{
+        try{
+            fs.copyFileSync(path.join(hostpath, 'hosts.bak'),path.join(hostpath, 'hosts'))
+        }catch (e){console.log(e)}
+    })
     app.on("will-quit", stop)
 }
 

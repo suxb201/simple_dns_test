@@ -7,8 +7,8 @@
                         serverButtonShow
                     }}</a-button>
                 </div>
-                <a-button>应用 hosts</a-button>
-                <a-button>恢复 hosts</a-button>
+<!--                <a-button>应用 hosts</a-button>-->
+                <a-button @click="clearhost">恢复 hosts</a-button>
             </a-space>
         </a-layout-header>
         <a-layout-content class="content">
@@ -115,10 +115,16 @@ export default {
 
             const data = toml.parse(filestr)
             // tableData.value = tableData.concat(data.dns.nameserver)
-            ctx.$nextTick(() => {
-                tableData.push(...data.dns.nameserver)
-                console.log(tableData)
+          tableData.push(...data.dns.nameserver)
+          console.log(ctx)
+          if(ctx && ctx._ && ctx._.nextTick){
+            ctx._.nextTick(()=>{
+              tableData.push(...data.dns.nameserver)
             })
+          }else{
+            tableData.push(...data.dns.nameserver)
+          }
+
         })
 
         //删除dns view
@@ -164,7 +170,10 @@ export default {
                 ipcRenderer.send("start")
             }, 1000)
         })
-
+      const clearhost=()=>{
+        ipcRenderer.send("stop")
+        ipcRenderer.send("clear")
+      }
         return {
             startbutton,
             tableData,
@@ -173,6 +182,7 @@ export default {
             addDnsServer,
             addnewdata,
             serverButtonShow,
+          clearhost
         }
     },
 }
