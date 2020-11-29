@@ -1,54 +1,55 @@
 {
-  "name": "ui",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {
-    "start": "cross-env NODE_ENV=development electron .   ",
-    "build-python": "pyinstaller ../src/main.py --clean --distpath ./pydist",
-    "dist": "electron-builder",
-    "dev": "cross-env NODE_ENV=development vite",
-    "build": "vite build",
-    "buildall": "vite build &&  electron-builder"
-  },
-  "build": {
-    "files": [
-      "!node_modules/*"
-    ],
-    "appId": "com.sxb.app",
-    "asar": false,
-    "directories": {
-      "output": "build"
+    "name": "ui",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "start": "cross-env NODE_ENV=development electron .   ",
+        "build-python": "pyinstaller ../src/main.py --clean --distpath ./pydist",
+        "dist": "electron-builder",
+        "dev": "cross-env NODE_ENV=development vite",
+        "build": "vite build",
+        "buildall": "vite build &&  electron-builder"
     },
-    "win": {
-      "target": [
-        "nsis",
-        "zip"
-      ],
-      "extraResources": {
-        "from": "./pyexe/",
-        "to": "pyexe"
-      }
+    "build": {
+        "files": [
+            "!node_modules/*"
+        ],
+        "appId": "com.sxb.app",
+        "asar": false,
+        "directories": {
+            "output": "build"
+        },
+        "win": {
+            "icon": "public/favicon.png",
+            "target": [
+                "nsis",
+                "zip"
+            ],
+            "extraResources": {
+                "from": "./pyexe/",
+                "to": "pyexe"
+            }
+        }
+    },
+    "author": "",
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^15.0.0",
+        "@rollup/plugin-json": "^4.1.0",
+        "@rollup/plugin-node-resolve": "^9.0.0",
+        "@rollup/plugin-alias": "^3.1.1",
+        "rollup-plugin-esbuild": "^2.4.2",
+        "@vue/compiler-sfc": "^3.0.2",
+        "cross-env": "^7.0.2",
+        "electron": "^11.0.3",
+        "electron-builder": "^22.9.1",
+        "electron-packager": "^15.1.0",
+        "vite": "^1.0.0-rc.8"
+    },
+    "dependencies": {
+        "@iarna/toml": "^2.2.5",
+        "ant-design-vue": "^2.0.0-beta.10",
+        "custom-electron-titlebar": "^3.2.5",
+        "vue": "^3.0.2"
     }
-  },
-  "author": "",
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^15.0.0",
-    "@rollup/plugin-json": "^4.1.0",
-    "@rollup/plugin-node-resolve": "^9.0.0",
-    "@rollup/plugin-alias": "^3.1.1",
-    "rollup-plugin-esbuild": "^2.4.2",
-    "@vue/compiler-sfc": "^3.0.2",
-    "cross-env": "^7.0.2",
-    "electron": "^11.0.3",
-    "electron-builder": "^22.9.1",
-    "electron-packager": "^15.1.0",
-    "vite": "^1.0.0-rc.8"
-  },
-  "dependencies": {
-    "@iarna/toml": "^2.2.5",
-    "ant-design-vue": "^2.0.0-beta.10",
-    "custom-electron-titlebar": "^3.2.5",
-    "vue": "^3.0.2"
-  }
 }
