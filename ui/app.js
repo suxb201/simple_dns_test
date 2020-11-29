@@ -26,7 +26,7 @@ function createWindow() {
     }
     // 然后加载应用的 index.html。
     win.loadURL(url)
-    win.webContents.openDevTools()
+    // win.webContents.openDevTools()
 
     let pyProc
     let interval
