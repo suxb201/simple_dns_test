@@ -138,3 +138,4 @@ ui/pydist/main.exe
 ui/hosts
 ui/hosts
 *.pkl
+android/app/pure/release/output.json

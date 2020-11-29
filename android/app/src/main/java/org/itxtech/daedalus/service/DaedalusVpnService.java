@@ -27,6 +27,7 @@ import org.itxtech.daedalus.server.AbstractDnsServer;
 import org.itxtech.daedalus.server.DnsServer;
 import org.itxtech.daedalus.server.DnsServerHelper;
 import org.itxtech.daedalus.speedtest.IpContainer;
+import org.itxtech.daedalus.speedtest.TCPLatencyTest;
 import org.itxtech.daedalus.util.DnsServersDetector;
 import org.itxtech.daedalus.util.Logger;
 import org.itxtech.daedalus.util.Rule;
@@ -188,6 +189,10 @@ public class DaedalusVpnService extends VpnService implements Runnable {
 
                     changehostThread=new Thread(()->{
                         int sleepsecond=5;
+                        int looptimes=0;
+                        if (IpContainer.testcore == null) {
+                            IpContainer.testcore = new TCPLatencyTest();
+                        }
                         while (true){
                             try {
                                 Thread.sleep(sleepsecond*1000);
@@ -195,6 +200,23 @@ public class DaedalusVpnService extends VpnService implements Runnable {
                                 if(sleepsecond>60){
                                     sleepsecond=60;
                                 }
+                                looptimes++;
+                                if(looptimes>20){
+                                    looptimes=0;
+                                    for(Map.Entry<String, ConcurrentHashMap<String,Double>> pair: IpContainer.name_ip_time.entrySet()){
+                                        String hostname=pair.getKey();
+                                        for(Map.Entry<String,Double> iptime:pair.getValue().entrySet()){
+                                            IpContainer.testcore.test(iptime.getKey(), (resip, ms) -> {
+                                                ConcurrentHashMap<String, Double> ip_time = IpContainer.name_ip_time.computeIfAbsent(hostname, (k) -> {
+                                                    return new ConcurrentHashMap<String, Double>();
+                                                });
+                                                ip_time.put(resip, ms);
+                                            });
+                                        }
+
+                                    }
+                                }
+
                                 String file = "晓斌加速器" + ".dr";//Daedalus Rule
                                 OutputStream outputStream = new FileOutputStream(Daedalus.rulePath + file);
                                 for(Map.Entry<String, ConcurrentHashMap<String,Double>> pair: IpContainer.name_ip_time.entrySet()){
