@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+                                      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <EditTextPreference
+            android:key="ruleName"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/settings_rule_name"/>
+
+    <PreferenceCategory
+            app:iconSpaceReserved="false"
+            android:key="rulSettings"
+            android:title="@string/settings_rule">
+        <ListPreference
+                android:key="ruleType"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:title="@string/settings_rule_type"/>
+        <EditTextPreference
+                android:key="ruleFilename"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:title="@string/settings_rule_filename"/>
+        <EditTextPreference
+                android:key="ruleDownloadUrl"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:title="@string/settings_rule_download_url"/>
+        <org.itxtech.daedalus.widget.ClickPreference
+                android:key="ruleSync"
+                android:title="@string/settings_rule_sync"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+            app:iconSpaceReserved="false"
+            android:key="Import"
+            android:title="@string/settings_rule_import">
+        <ListPreference
+                android:key="ruleImportBuildIn"
+                android:title="@string/settings_rule_import_built_in"/>
+        <org.itxtech.daedalus.widget.ClickPreference
+                android:key="ruleImportExternal"
+                android:title="@string/settings_rule_import_external"/>
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+        xmlns:android="http://schemas.android.com/apk/res/android"
+>
+
+    <group android:checkableBehavior="single"
+           android:id="@+id/nav_group_main">
+        <item android:id="@+id/nav_home"
+              android:title="@string/action_home"
+              android:checked="true"
+              android:icon="@drawable/ic_home"/>
+        <item android:id="@+id/nav_dns_test"
+              android:title="@string/action_dns_test"
+              android:checked="false"
+              android:icon="@drawable/ic_verified_user"/>
+    </group>
+
+    <group android:checkableBehavior="single"
+           android:id="@+id/nav_group_profiles">
+        <item android:id="@+id/nav_dns_server"
+              android:title="@string/action_dns_servers"
+              android:icon="@drawable/ic_device_hub"/>
+        <item android:id="@+id/nav_rules"
+              android:title="@string/action_rules"
+              android:checked="false"
+              android:icon="@drawable/ic_description"/>
+    </group>
+
+    <group android:checkableBehavior="single"
+           android:id="@+id/nav_group_more">
+        <item android:id="@+id/nav_log"
+              android:title="@string/action_log"
+              android:icon="@drawable/ic_assignment"/>
+        <item android:id="@+id/nav_settings"
+              android:title="@string/action_settings"
+              android:icon="@drawable/ic_settings"/>
+        <item android:id="@+id/nav_about"
+              android:title="@string/action_about"
+              android:icon="@drawable/ic_info"/>
+    </group>
+
+    <group android:id="@+id/nav_group_help_and_support">
+        <item android:id="@+id/nav_github"
+              android:title="@string/nav_github"
+              android:icon="@drawable/ic_github"/>
+    </group>
+</menu>

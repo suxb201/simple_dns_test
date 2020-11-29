@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="org.itxtech.daedalus">
+
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+                     android:maxSdkVersion="18"/>
+
+    <application
+            android:name=".Daedalus"
+            android:allowBackup="true"
+            android:fullBackupContent="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="晓斌加速器"
+            android:supportsRtl="true"
+            android:theme="@style/AppTheme">
+        <service
+                android:name=".service.DaedalusVpnService"
+                android:permission="android.permission.BIND_VPN_SERVICE">
+            <intent-filter>
+                <action android:name="android.net.VpnService"/>
+            </intent-filter>
+        </service>
+        <service
+                android:name=".service.DaedalusTileService"
+                android:label="@string/app_name"
+                android:icon="@drawable/ic_security"
+                android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <receiver android:name=".receiver.BootBroadcastReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </receiver>
+        <receiver
+                android:name=".receiver.StatusBarBroadcastReceiver"
+                android:exported="false">
+            <intent-filter>
+                <action android:name="org.itxtech.daedalus.receiver.StatusBarBroadcastReceiver.STATUS_BAR_BTN_DEACTIVATE_CLICK_ACTION"/>
+                <action android:name="org.itxtech.daedalus.receiver.StatusBarBroadcastReceiver.STATUS_BAR_BTN_SETTINGS_CLICK_ACTION"/>
+            </intent-filter>
+        </receiver>
+
+        <activity
+                android:name=".activity.MainActivity"
+                android:configChanges="keyboard|keyboardHidden|screenLayout|uiMode|orientation|screenSize|smallestScreenSize"
+                android:label="晓斌加速器"
+                android:launchMode="singleTask"
+                android:theme="@style/AppTheme.NoActionBar.TransparentStatusBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+            <meta-data
+                    android:name="android.app.shortcuts"
+                    android:resource="@xml/shortcuts"/>
+        </activity>
+        <activity
+                android:name=".activity.ConfigActivity"
+                android:label=""
+                android:configChanges="keyboard|keyboardHidden|screenLayout|uiMode|orientation|screenSize|smallestScreenSize"
+                android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+        <activity
+                android:name=".activity.AppFilterActivity"
+                android:label=""
+                android:configChanges="keyboard|keyboardHidden|screenLayout|uiMode|orientation|screenSize|smallestScreenSize"
+                android:theme="@style/AppTheme.NoActionBar"/>
+    </application>
+
+</manifest>
