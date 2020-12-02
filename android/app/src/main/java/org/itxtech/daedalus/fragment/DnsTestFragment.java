@@ -284,7 +284,9 @@ public class DnsTestFragment extends ToolbarFragment {
     }
 
     public static class DnsQuery extends NetworkDataSource {
+
         public DnsMessage query(DnsMessage message, InetAddress address, int port) throws IOException {
+            setTimeout(500);
             return queryUdp(message, address, port);
         }
     }

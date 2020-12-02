@@ -35,7 +35,7 @@ public class DnsServerHelper {
     public static void buildCache() {
         domainCache = new HashMap<>();
         if (ProviderPicker.getDnsQueryMethod() >= ProviderPicker.DNS_QUERY_METHOD_HTTPS_IETF &&
-                !Daedalus.getPrefs().getBoolean("settings_dont_build_cache", true)) {
+                !Daedalus.getPrefs().getBoolean("settings_dont_build_cache", false)) {
             buildDomainCache(getServerById(getPrimary()).getAddress());
             buildDomainCache(getServerById(getSecondary()).getAddress());
         }

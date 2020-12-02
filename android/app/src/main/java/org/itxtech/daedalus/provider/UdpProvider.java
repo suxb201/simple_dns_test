@@ -41,6 +41,10 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Daedalus Project
@@ -167,19 +171,22 @@ public class UdpProvider extends Provider {
         }
     }
 
+    static Pattern pip;
+
+    static {
+        String regex = "^([1-9]|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])\\." +
+                "(\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])\\." +
+                "(\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])\\." +
+                "(\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])$";
+        pip = Pattern.compile(regex);
+    }
 
     public boolean isIPAddressByRegex(String str) {
-        String regex = "\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}";
-        // 判断ip地址是否与正则表达式匹配
-        if (str.matches(regex)) {
-            String[] arr = str.split("\\.");
-            for (int i = 0; i < 4; i++) {
-                int temp = Integer.parseInt(arr[i]);
-                //如果某个数字不是0到255之间的数 就返回false
-                if (temp < 0 || temp > 255) return false;
-            }
-            return true;
-        } else return false;
+        if (str.equals("") || str.length() == 0) {
+            return false;
+        }
+        Matcher m = pip.matcher(str);
+        return m.matches();
     }
 
 
@@ -201,6 +208,7 @@ public class UdpProvider extends Provider {
         }
 
         if (!(parsedPacket.getPayload() instanceof UdpPacket)) {
+            //只检查udp的数据包
             try {
                 Logger.debug("handleDnsRequest: Discarding unknown packet type " + parsedPacket.getPayload());
             } catch (Exception ignored) {
@@ -208,94 +216,74 @@ public class UdpProvider extends Provider {
             return;
         }
 
-
-
-        UdpPacket upk = (UdpPacket) parsedPacket.getPayload();
-        DnsPacket dpk = (DnsPacket) upk.getPayload();
-        DnsPacket.DnsHeader dhd = dpk.getHeader();
-        ArrayList<DnsQuestion> al = (ArrayList<DnsQuestion>) dhd.getQuestions();
-        for (DnsQuestion q : al) {
-
-            DnsDomainName domainName = q.getQName();
-
-            String domainNameS = domainName.toString();
-            HashSet<String> ipset = IpContainer.name_ip.get(domainNameS);
-            if (ipset == null ) {
-                Logger.info("找到域名 " + domainNameS);
-
-                new Thread(()->{
-                    HashSet<String> allip = new HashSet<>();
-                    IpContainer.name_ip.put(domainName.toString(), allip);
-                    //这里去找所有的ip
-                    for (String ip : IpContainer.allDns.keySet()) {
-                        DnsTestFragment.DnsQuery dnsQuery = new DnsTestFragment.DnsQuery();
-                        DnsMessage.Builder message = DnsMessage.builder()
-                                .addQuestion(new Question(domainName.toString(), Record.TYPE.A))
-                                .setId((new Random()).nextInt())
-                                .setRecursionDesired(true)
-                                .setOpcode(DnsMessage.OPCODE.QUERY)
-                                .setResponseCode(DnsMessage.RESPONSE_CODE.NO_ERROR)
-                                .setQrFlag(false);
-                        try {
-                            DnsMessage response = dnsQuery.query(message.build(), InetAddress.getByName(ip), 53);
-                            if (response.answerSection.size() > 0) {
-                                for (Record record : response.answerSection) {
-
-                                    String ipstr = record.getPayload().toString();
-                                    if (isIPAddressByRegex(ipstr)) {
-                                        allip.add(ipstr);
-                                    }
-
-
-                                }
-
-                            }
-                        } catch (IOException e) {
-                            Logger.info("拉闸dns!"+IpContainer.allDns.get(ip));
-//                        e.printStackTrace();
-                        }
-
-
-                    }
-
-                    for (String ipfortest : allip) {
-                        if (IpContainer.testcore == null) {
-                            IpContainer.testcore = new TCPLatencyTest();
-                        }
-                        IpContainer.testcore.test(ipfortest, (resip, ms) -> {
-                            ConcurrentHashMap<String, Double> ip_time = IpContainer.name_ip_time.computeIfAbsent(domainNameS, (k) -> {
-                                return new ConcurrentHashMap<String, Double>();
-                            });
-                            ip_time.put(resip, ms);
-                        });
-                    }
-
-                    Logger.info(domainNameS + " : " + allip.toString());
-                }).start();
-
-
-
-
-                //domainNameS
-
-//                new Thread(() -> {
-//                    //奥利给 测了!
-//
-//                    //假装这个是测完的
-////                    float ms=0;
-////                    String ip="";
-////                    String host="";
-////                    ConcurrentHashMap<String, Double> ip_time=IpContainer.name_ip_time.computeIfAbsent(host,(k)->{return new ConcurrentHashMap<String, Double>();});
-////                    ip_time.put(ip,ms);
-//                }).start();
-            }
-
-        }
-
         InetAddress destAddr = parsedPacket.getHeader().getDstAddr();
         if (destAddr == null) {
             return;
         }
+
+        UdpPacket upk = (UdpPacket) parsedPacket.getPayload();
+        if(upk.getPayload() instanceof DnsPacket){
+            DnsPacket dpk = (DnsPacket) upk.getPayload();
+            DnsPacket.DnsHeader dhd = dpk.getHeader();
+            ArrayList<DnsQuestion> al = (ArrayList<DnsQuestion>) dhd.getQuestions();
+            for (DnsQuestion q : al) {
+
+                DnsDomainName domainName = q.getQName();
+                String domainNameS = domainName.toString();
+                if (!domainNameS.contains(".")) {
+                    //没有.也能叫域名?
+                    continue;
+                }
+                IpContainer.IpFound found = IpContainer.name_ip.computeIfAbsent(domainNameS, (k) -> new IpContainer.IpFound(domainNameS));
+                if (found.shouldFound()) {
+                    //刷新次数
+                    found.found();
+                    long startTime = System.currentTimeMillis();
+                    if (IpContainer.testcore == null) {
+                        IpContainer.testcore = new TCPLatencyTest();
+                    }
+
+                    //这里去找所有的ip
+                    for (IpContainer.DnsServer server: IpContainer.AllDnsList) {
+                        String ip= server.ip;
+                        IpContainer.testcore.executor.submit(() -> {
+                            try {
+                                DnsTestFragment.DnsQuery dnsQuery = new DnsTestFragment.DnsQuery();
+                                DnsMessage.Builder message = DnsMessage.builder()
+                                        .addQuestion(new Question(domainName.toString(), Record.TYPE.A))
+                                        .setId((new Random()).nextInt())
+                                        .setRecursionDesired(true)
+                                        .setOpcode(DnsMessage.OPCODE.QUERY)
+                                        .setResponseCode(DnsMessage.RESPONSE_CODE.NO_ERROR)
+                                        .setQrFlag(false);
+                                DnsMessage response = dnsQuery.query(message.build(), InetAddress.getByName(ip), 53);
+                                if (response.answerSection.size() > 0) {
+                                    ConcurrentHashMap<String,Double>ip_time=IpContainer.name_ip_time.computeIfAbsent(domainNameS, (k) -> new ConcurrentHashMap<>());
+                                    for (Record record : response.answerSection) {
+                                        String ipstr = record.getPayload().toString();
+                                        if (isIPAddressByRegex(ipstr) && !ip_time.containsKey(ipstr)) {
+                                            IpContainer.testcore.test(ipstr, ip_time::put);
+                                        }
+                                    }
+                                    server.querySuccess.getAndIncrement();
+                                }
+                            } catch (IOException e) {
+                                server.queryFailed.getAndIncrement();
+//                                Logger.info("拉闸dns! " + server.description + " " + domainName.toString());
+                            }
+                        });
+                    }
+                    long endTime = System.currentTimeMillis();
+                    Logger.info("找到域名 " + domainNameS + " submit耗时 " + (endTime - startTime) + "ms");
+
+                }
+            }
+        }
+
+
+
+
+
 
 
         AbstractDnsServer dnsServer;
@@ -312,7 +300,7 @@ public class UdpProvider extends Provider {
 
         if (parsedUdp.getPayload() == null) {
             Log.i(TAG, "handleDnsRequest: Sending UDP packet without payload: " + parsedUdp);
-
+            //不走vpn的数据
             // Let's be nice to Firefox. Firefox uses an empty UDP packet to
             // the gateway to reduce the RTT. For further details, please see
             // https://bugzilla.mozilla.org/show_bug.cgi?id=888268
@@ -336,8 +324,9 @@ public class UdpProvider extends Provider {
             Logger.debug("handleDnsRequest: Discarding DNS packet with no query " + dnsMsg);
             return;
         }
-
+        //先resolve 走一波host
         if (!resolve(parsedPacket, dnsMsg)) {
+            //如果host里没找到规则
             DatagramPacket outPacket = new DatagramPacket(dnsRawData, 0, dnsRawData.length, destAddr, dnsServer.getPort());
             forwardPacket(outPacket, parsedPacket, dnsServer);
         }

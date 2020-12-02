@@ -33,7 +33,7 @@ public class GlobalConfigFragment extends PreferenceFragmentCompat {
 
         addPreferencesFromResource(R.xml.perf_settings);
 
-        boolean visible = !Daedalus.getPrefs().getBoolean("settings_use_system_dns", false);
+        boolean visible = !Daedalus.getPrefs().getBoolean("settings_use_system_dns", true);
         for (String k : new ArrayList<String>() {{
             add("primary_server");
             add("secondary_server");
@@ -72,8 +72,8 @@ public class GlobalConfigFragment extends PreferenceFragmentCompat {
 
         SwitchPreference advanced = findPreference("settings_advanced_switch");
         advanced.setOnPreferenceChangeListener((preference, newValue) -> {
-            updateOptions((boolean) newValue, "settings_advanced");
-            return true;
+//            updateOptions((boolean) newValue, "settings_advanced");
+            return false;
         });
 
         SwitchPreference appFilter = findPreference("settings_app_filter_switch");

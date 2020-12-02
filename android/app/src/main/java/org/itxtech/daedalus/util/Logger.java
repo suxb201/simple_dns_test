@@ -49,6 +49,9 @@ public class Logger {
     public static void info(String message) {
         send("[INFO] " + message);
     }
+    public static void i(String message) {
+        sendsmall(message);
+    }
 
     public static void debug(String message) {
 
@@ -67,7 +70,7 @@ public class Logger {
     }
 
     private static int getLogSizeLimit() {
-        return Integer.parseInt(Daedalus.getPrefs().getString("settings_log_size", "10000"));
+        return Integer.parseInt(Daedalus.getPrefs().getString("settings_log_size", "1000000"));
     }
 
     private static boolean checkBufferSize() {
@@ -83,7 +86,16 @@ public class Logger {
         }
         return true;
     }
-
+    private static void sendsmall(String message){
+        try {
+            if (checkBufferSize()) {
+                buffer.insert(0, "\n").insert(0, message);
+            }
+            Log.d("Daedalus", message);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     private static void send(String message) {
         try {
             if (checkBufferSize()) {

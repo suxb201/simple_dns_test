@@ -90,7 +90,7 @@ public abstract class Provider {
         try {
             String response = RuleResolver.resolve(dnsQueryName, dnsMsg.getQuestion().type);
             if (response != null && dnsMsg.getQuestion().type == Record.TYPE.A) {
-                Logger.info("Provider: Resolved " + dnsQueryName + "  Local resolver response: " + response);
+//                Logger.info("Provider: Resolved " + dnsQueryName + "  Local resolver response: " + response);
                 DnsMessage.Builder builder = dnsMsg.asBuilder()
                         .setQrFlag(true)
                         .addAnswer(new Record<>(dnsQueryName, Record.TYPE.A, 1, 64,
@@ -98,7 +98,7 @@ public abstract class Provider {
                 handleDnsResponse(parsedPacket, builder.build().toArray());
                 return true;
             } else if (response != null && dnsMsg.getQuestion().type == Record.TYPE.AAAA) {
-                Logger.info("Provider: Resolved " + dnsQueryName + "  Local resolver response: " + response);
+                Logger.info("Provider: Resolved AAAA " + dnsQueryName + "  Local resolver response: " + response);
                 DnsMessage.Builder builder = dnsMsg.asBuilder()
                         .setQrFlag(true)
                         .addAnswer(new Record<>(dnsQueryName, Record.TYPE.AAAA, 1, 64,

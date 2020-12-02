@@ -1,23 +1,31 @@
 package org.itxtech.daedalus.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.VpnService;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+
 import com.google.android.material.navigation.NavigationView;
+
 import org.itxtech.daedalus.BuildConfig;
 import org.itxtech.daedalus.Daedalus;
 import org.itxtech.daedalus.R;
@@ -91,7 +99,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         ((TextView) navigationView.getHeaderView(0).findViewById(R.id.textView_nav_git_commit)).setText(getString(R.string.nav_git_commit) + " " + BuildConfig.GIT_COMMIT);
 
         updateUserInterface(getIntent());
+
+
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            //没有权限则申请权限
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        } else {
+            //有权限直接执行,docode()不用做处理
+        }
     }
+
 
     private void switchFragment(Class fragmentClass) {
         if (currentFragment == null || fragmentClass != currentFragment.getClass()) {
@@ -145,21 +162,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
         activateCounter++;
         Daedalus.configurations.setActivateCounter(activateCounter);
-//        if (activateCounter % 10 == 0) {
-//            new AlertDialog.Builder(this)
-//                    .setTitle("觉得还不错？")
-//                    .setMessage("您的支持是我动力来源！\n请考虑为我买杯咖啡醒醒脑，甚至其他…… ;)")
-//                    .setPositiveButton("为我买杯咖啡", (dialog, which) -> {
-//                        Daedalus.donate();
-//                        new AlertDialog.Builder(MainActivity.this)
-//                                .setMessage("感谢您的支持！;)\n我会再接再厉！")
-//                                .setPositiveButton("确认", null)
-//                                .show();
-//                    })
-//                    .setNeutralButton("不再显示", (dialog, which) -> Daedalus.configurations.setActivateCounter(-1))
-//                    .setNegativeButton("取消", null)
-//                    .show();
-//        }
+
     }
 
     public void onActivityResult(int request, int result, Intent data) {

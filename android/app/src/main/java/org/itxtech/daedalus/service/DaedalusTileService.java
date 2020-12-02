@@ -21,10 +21,12 @@ import org.itxtech.daedalus.R;
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class DaedalusTileService extends TileService {
 
+
+
     @Override
     public void onClick() {
         Tile tile = getQsTile();
-        tile.setLabel(getString(R.string.quick_toggle));
+        tile.setLabel("冲!");
         tile.setContentDescription(getString(R.string.app_name));
         tile.setState(Daedalus.switchService() ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         tile.updateTile();
@@ -38,6 +40,7 @@ public class DaedalusTileService extends TileService {
     private void updateTile() {
         boolean activate = DaedalusVpnService.isActivated();
         Tile tile = getQsTile();
+
         tile.setLabel(getString(R.string.quick_toggle));
         tile.setContentDescription(getString(R.string.app_name));
         tile.setState(activate ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);

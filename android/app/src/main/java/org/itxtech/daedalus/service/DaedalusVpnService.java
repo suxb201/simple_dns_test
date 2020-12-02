@@ -15,8 +15,11 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.system.OsConstants;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
+
 import org.itxtech.daedalus.Daedalus;
 import org.itxtech.daedalus.R;
 import org.itxtech.daedalus.activity.MainActivity;
@@ -33,18 +36,32 @@ import org.itxtech.daedalus.util.Logger;
 import org.itxtech.daedalus.util.Rule;
 import org.itxtech.daedalus.util.RuleResolver;
 
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.counting;
 
 /**
  * Daedalus Project
@@ -132,13 +149,14 @@ public class DaedalusVpnService extends VpnService implements Runnable {
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             switch (intent.getAction()) {
                 case ACTION_ACTIVATE:
                     activated = true;
-                    if (Daedalus.getPrefs().getBoolean("settings_notification", true)) {
+                    if (Daedalus.getPrefs().getBoolean("settings_notification", false)) {
                         NotificationManager manager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
                         NotificationCompat.Builder builder;
@@ -180,101 +198,145 @@ public class DaedalusVpnService extends VpnService implements Runnable {
                     }
 
                     Daedalus.initRuleResolver();
-                    startThread();
-                    Daedalus.updateShortcut(getApplicationContext());
-                    if (MainActivity.getInstance() != null) {
-                        MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
-                                .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
-                    }
 
-                    changehostThread=new Thread(()->{
-                        int sleepsecond=5;
-                        int looptimes=0;
+
+                    changehostThread = new Thread(() -> {
+
+                        //空配置文件 尝试从host里读入一份
+                        {
+                            String file = Daedalus.rulePath + "晓斌加速器" + ".dr";//Daedalus Rule
+                            AtomicInteger rulecount=new AtomicInteger();
+                            try (Stream<String> lines = Files.lines(Paths.get(file))) {
+                                lines.map(s -> s.split(" "))
+                                        .filter(arrs->arrs.length>2)
+                                        .forEach(arrs -> {
+                                            rulecount.getAndIncrement();
+                                            IpContainer.name_ip_time.put(arrs[1], new ConcurrentHashMap<String, Double>() {{
+                                                put(arrs[0], 50.0);
+                                            }});
+                                        });
+                                Logger.info("从host加载 " + rulecount + "份配置");
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                Logger.i(e.toString());
+                            }
+                        }
+
                         if (IpContainer.testcore == null) {
                             IpContainer.testcore = new TCPLatencyTest();
                         }
-                        while (true){
+                        int sleepsecond = 5;
+                        long lastfilesave = 0;
+                        long lastretest = 0;
+                        while (true) {
                             try {
-                                Thread.sleep(sleepsecond*1000);
-                                sleepsecond*=2;
-                                if(sleepsecond>60){
-                                    sleepsecond=60;
+                                Thread.sleep(1000 * 5);
+                                ThreadPoolExecutor tpe = ((ThreadPoolExecutor) IpContainer.testcore.executor);
+                                int queueSize = tpe.getQueue().size();
+                                int activeCount = tpe.getActiveCount();
+                                long completedTaskCount = tpe.getCompletedTaskCount();
+                                long taskCount = tpe.getTaskCount();
+                                if(activeCount>0){
+                                    Logger.i("线程性能:" + queueSize + "(积压) + " + activeCount + "(执行中) ");
                                 }
-                                looptimes++;
-                                if(looptimes>20){
-                                    looptimes=0;
-                                    for(Map.Entry<String, ConcurrentHashMap<String,Double>> pair: IpContainer.name_ip_time.entrySet()){
-                                        String hostname=pair.getKey();
-                                        for(Map.Entry<String,Double> iptime:pair.getValue().entrySet()){
-                                            IpContainer.testcore.test(iptime.getKey(), (resip, ms) -> {
-                                                ConcurrentHashMap<String, Double> ip_time = IpContainer.name_ip_time.computeIfAbsent(hostname, (k) -> {
-                                                    return new ConcurrentHashMap<String, Double>();
+                                if (System.currentTimeMillis() - lastfilesave >= sleepsecond * 1000) {
+                                    sleepsecond *= 2;
+                                    lastfilesave = System.currentTimeMillis();
+                                    if (sleepsecond > 60) {
+                                        sleepsecond = 60;
+                                    }
+                                    String file = "晓斌加速器" + ".dr";//Daedalus Rule
+                                    try {
+                                        synchronized (IpContainer.name_ip_time) {
+                                            List<String> sss = IpContainer.name_ip_time.entrySet().stream()
+                                                    .map(entry -> {
+                                                        try {
+                                                            Map.Entry<String, Double> ip_time = entry.getValue().entrySet().stream()
+                                                                    .min((a, b) -> Double.compare(a.getValue(), b.getValue())).get();
+                                                            String host = entry.getKey();
+                                                            String ans = ip_time.getKey() + " " + host + " # " + (Double.toString(ip_time.getValue())) + " ms\n";
+                                                            if (ip_time.getValue() < 1e5) {
+                                                                return ans;
+                                                            }
+                                                        } catch (Exception e) {
+                                                            Logger.i(e.toString());
+                                                        }
+                                                        return "";
+                                                    }).collect(Collectors.toList());
+                                            Files.write(Paths.get(Daedalus.rulePath + file), sss);
+                                        }
+                                    } catch (Exception e) {
+                                        Logger.i(e.toString());
+                                    }
+                                    //刷新host
+                                    Rule r = Rule.getRuleById("114514");
+                                    if (r == null) {
+                                        //添加新的
+                                        Rule rule = new Rule("晓斌加速器", file, 0, "");
+                                        rule.setId("114514");
+                                        rule.addToConfig();
+                                        rule.setUsing(true);
+                                    } else {
+                                        //重载旧的
+                                        //好像不用动
+                                    }
+                                    if (r != null) {
+                                        r.setUsing(true);
+                                    }
+                                    //启动!
+                                    //通知变更
+                                    Daedalus.setRulesChanged();
+                                }
+                                if (System.currentTimeMillis() - lastretest >= IpContainer.GetSpeedTestCoolDown() * 60 * 1000) {
+                                    lastretest = System.currentTimeMillis();
+                                    //限制每个ip最多只能有10个测速的
+                                    long t1 = System.currentTimeMillis();
+                                    synchronized (IpContainer.name_ip_time) {
+                                        IpContainer.name_ip_time.entrySet()
+                                                .forEach(entry -> {
+                                                    entry.setValue(
+                                                            (entry.getValue().entrySet().stream()
+                                                                    .sorted((a, b) -> Double.compare(a.getValue(), b.getValue()))
+                                                                    .limit(10)
+                                                                    .collect(Collectors.toConcurrentMap(
+                                                                            Map.Entry::getKey,
+                                                                            Map.Entry::getValue,
+                                                                            (o1, o2) -> o1,
+                                                                            ConcurrentHashMap::new))));
                                                 });
-                                                ip_time.put(resip, ms);
-                                            });
-                                        }
 
                                     }
-                                }
+                                    long t2 = System.currentTimeMillis();
+                                    synchronized (IpContainer.name_ip_time) {
+                                        IpContainer.name_ip_time.values()
+                                                .forEach(ip_time -> ip_time.keySet()
+                                                        .forEach(ip -> IpContainer.testcore.test(ip, ip_time::put)));
 
-                                String file = "晓斌加速器" + ".dr";//Daedalus Rule
-                                OutputStream outputStream = new FileOutputStream(Daedalus.rulePath + file);
-                                for(Map.Entry<String, ConcurrentHashMap<String,Double>> pair: IpContainer.name_ip_time.entrySet()){
-                                    String hostname=pair.getKey();
-                                    String bestIp="";
-                                    double bestTime=1e5;
-                                    for(Map.Entry<String,Double> iptime:pair.getValue().entrySet()){
-                                        if(iptime.getValue()<bestTime){
-                                            bestTime=iptime.getValue();
-                                            bestIp=iptime.getKey();
-                                        }
                                     }
-                                    if(bestTime<1e5){
-                                        //写入host
-                                        String sans=bestIp+" "+hostname+" "+" #"+(Double.valueOf(bestTime).toString())+"ms\n";
-                                        outputStream.write(sans.getBytes());
-                                    }
+                                    long t3 = System.currentTimeMillis();
+                                    Logger.i("streamlimit 耗时" + " " + (t2 - t1) + " ms " + " 重测耗时= " + (t3 - t2) + " ms");
                                 }
-                                outputStream.close();
-                                //刷新host
-                                Rule r= Rule.getRuleById("114514");
-                                if(r==null){
-                                    //添加新的
-                                    Rule rule = new Rule("晓斌加速器", file, 0, "");
-                                    rule.setId("114514");
-                                    rule.addToConfig();
-                                    rule.setUsing(true);
-                                }else{
-                                    //重载旧的
-                                    //好像不用动
-                                }
-                                Rule rule = Rule.getRuleById("114514");
-                                if(rule!=null){
-                                    rule.setUsing(true);
-                                }
-                                //启动!
-                                //通知变更
-                                Daedalus.setRulesChanged();
-
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
+                            } catch (Exception e) {
                                 e.printStackTrace();
                             }
                         }
                     });
                     changehostThread.start();
-
+                    startThread();
+                    Daedalus.updateShortcut(getApplicationContext());
+                    if (MainActivity.getInstance() != null) {
+                        //我选择不拉起主页面
+//                        MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
+//                                .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
+                    }
                     return START_STICKY;
                 case ACTION_DEACTIVATE:
                     stopThread();
 
-                    if(changehostThread!=null){
+                    if (changehostThread != null) {
                         //停!
                         changehostThread.interrupt();
-                        changehostThread=null;
+                        changehostThread = null;
                     }
                     return START_NOT_STICKY;
             }
@@ -300,7 +362,6 @@ public class DaedalusVpnService extends VpnService implements Runnable {
     }
 
     private void stopThread() {
-
 
 
         Log.d(TAG, "stopThread");
@@ -341,8 +402,8 @@ public class DaedalusVpnService extends VpnService implements Runnable {
         }
 
         if (shouldRefresh && MainActivity.getInstance() != null) {
-            MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
-                    .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
+//            MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
+//                    .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
         } else if (shouldRefresh) {
             Daedalus.updateShortcut(getApplicationContext());
         }
