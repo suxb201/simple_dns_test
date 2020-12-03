@@ -18,6 +18,8 @@ jobs:
       with:
         java-version: 1.8
     - name: Build with Gradle
-      run: cd android && chmod +x gradlew && ./gradlew build
+      run: cd android && chmod +x gradlew && ./gradlew assembleGoogleDebug
+    - name: Build release
+      run: cd android && chmod +x gradlew && ./gradlew assembleGoogleRelease
         
         
