@@ -1,29 +1,21 @@
-# iTXTech Daedalus
+# 晓斌加速器
 
-[![Donate](https://img.shields.io/badge/alipay-donate-yellow.svg)](https://qr.alipay.com/FKX04751EZDP0SQ0BOT137)
-[![Build Status](https://travis-ci.org/iTXTech/Daedalus.svg?branch=master)](https://travis-ci.org/iTXTech/Daedalus)
-[![Jenkins](https://img.shields.io/jenkins/s/http/dev.itxtech.org:10298/job/Daedalus.svg)](http://dev.itxtech.org:10298/job/Daedalus/)
+晓斌加速器是一个从[Daedalus](https://github.com/iTXTech/Daedalus/)上魔改过来的安卓端的dns聚合加速器
 
-__No root required Android DNS modifier and Hosts/DNSMasq resolver.__
+免root 针对拉闸的校园网dns 进行多dns联合测速 得出最优host文件进行ip直连加速
 
 ## Installation
-* __[Jenkins](http://dev.itxtech.org:10298/job/Daedalus/)__ - Debug signature
-* __[Releases](https://github.com/iTXTech/Daedalus/releases)__ - Release signature
-* __[Play Test](https://play.google.com/apps/testing/org.itxtech.daedalus)__ - Release signature
+* __[oops-ftp(需要sdu校园网)](http://ftp.oops-sdu.cn/oops/exe/晓斌加速器release.apk)__ - Release signature
+* __[Releases](https://github.com/suxb201/simple_dns_test/releases)__ - Release signature
 
-[<img alt='Get it on Google Play'
-      src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png'
-      height="80">](https://play.google.com/store/apps/details?id=org.itxtech.daedalus)
 
-## Useful links
-* __[Telegram](https://t.me/iTXTechDaedalus)__ - Join chat
-* __[Wiki](https://github.com/iTXTech/Daedalus/wiki)__ - Pending update
 
-## Introduction
+## Daedalus's Introduction
 
 This application creates a VPN tunnel to handle all DNS requests.<br>
 <br>
 Features:
+
 * No root access required, no ads contained
 * Functional under data connection
 * A tester for DNS servers
@@ -43,26 +35,14 @@ Supported DNS Query Methods:
 
 __Users must comply with local laws and regulations.__<br>
 
-## DNS Server Providers
-
-* __CuteDNS__ - *Shutdown according to regulations*
-* __[FUN DNS](http://fundns.cn)__ - *Shutdown according to regulations*
-* __[Pure DNS](https://puredns.cn/)__ - *Shutdown according to regulations*
-* __[PdoMo-DNS](https://pdomo.me/)__ - *Shutdown according to regulations*
-* __[rubyfish](https://www.rubyfish.cn)__ - *Free DoT/DoH DNS*
-
-## Rule Providers
-
-* __[hosts](https://github.com/googlehosts/hosts)__ by *[googlehosts](https://github.com/googlehosts)* - [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)
-* __[yhosts](https://github.com/vokins/yhosts)__ by *[vokins](https://github.com/vokins)* - [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+* https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
 ## Requirements
 
-* Minimum Android version: >= 5.0 (API 21)
-* Recommended Android version: >= 7.1 (API 25) - __*Launcher shortcuts*__
+* Minimum Android version: >= 8.0 (API 26)
 
 ## Open Source Licenses
-
+* __[ClearEditText](https://github.com/iTXTech/Daedalus)__ by *[iTXTech](https://github.com/iTXTech)* - [GPLv3](https://github.com/iTXTech/Daedalus/blob/master/LICENSE)
 * __[ClearEditText](https://github.com/MrFuFuFu/ClearEditText)__ by *[Yuan Fu](https://github.com/MrFuFuFu)* - [APL 2.0](https://github.com/MrFuFuFu/ClearEditText)
 * __[DNS66](https://github.com/julian-klode/dns66)__ by *[Julian Andres Klode](https://github.com/julian-klode)* - [GPLv3](https://github.com/julian-klode/dns66/blob/master/COPYING)
 * __[Pcap4J](https://github.com/kaitoy/pcap4j)__ by *[Kaito Yamada](https://github.com/kaitoy)* - [MIT](https://github.com/kaitoy/pcap4j)
@@ -70,23 +50,21 @@ __Users must comply with local laws and regulations.__<br>
 * __[Gson](https://github.com/google/gson)__ by *[Google](https://github.com/google)* - [APL 2.0](https://github.com/google/gson/blob/master/LICENSE)
 * __[Shadowsocks](https://github.com/shadowsocks/shadowsocks-android)__ by *[Shadowsocks](https://github.com/shadowsocks)* - [GPLv3](https://github.com/shadowsocks/shadowsocks-android/blob/master/LICENSE)
 
-## Credits
 
-* __[JetBrains](https://www.jetbrains.com/)__ - For providing free license for [IntelliJ IDEA](https://www.jetbrains.com/idea/)
 
 ## License
 
-    Copyright (C) 2017-2019 iTX Technologies <admin@itxtech.org>
+    Copyright (C) 2020 yuandiaodiaodiao <qq295087430@outlook.com>
     
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
