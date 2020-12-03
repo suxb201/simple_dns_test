@@ -26,9 +26,9 @@ jobs:
         with:
           name: app-debug.apk
           path: android/app/build/outputs/apk/pure/debug/app-debug.apk
-      - name: Upload Artifact release
-          uses: actions/upload-artifact@v2
-          with:
-            name: app-release.apk
-            path: android/app/build/outputs/apk/pure/release/app-release.apk
-        
+      - name: Upload Artifact2
+        uses: actions/upload-artifact@v2
+        with:
+          name: app-release.apk
+          path: android/app/build/outputs/apk/pure/release/app-release.apk
+
