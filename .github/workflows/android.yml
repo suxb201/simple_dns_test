@@ -2,15 +2,15 @@ name: Android CI
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    paths:
+      - 'android/**'
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: android
     steps:
       - uses: actions/checkout@v2
       - name: set up JDK 1.8
@@ -18,15 +18,17 @@ jobs:
         with:
           java-version: 1.8
       - name: Build with Gradle
-        run: cd android && chmod +x gradlew && ./gradlew assemblePureDebug
+        run: chmod +x gradlew && ./gradlew assemblePureDebug
       - name: Build release
-        run: cd android && chmod +x gradlew && ./gradlew assemblePureRelease
-      - name: Upload Artifact
+        run: chmod +x gradlew && ./gradlew assemblePureRelease
+      - name: Upload Debug
+        if: ${{ github.event_name == 'release' }}
         uses: actions/upload-artifact@v2
         with:
           name: app-debug.apk
           path: android/app/build/outputs/apk/pure/debug/app-debug.apk
-      - name: Upload Artifact2
+      - name: Upload Release
+        if: ${{ github.event_name == 'release' }}
         uses: actions/upload-artifact@v2
         with:
           name: app-release.apk
