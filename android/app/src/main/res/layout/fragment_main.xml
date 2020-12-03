@@ -17,7 +17,7 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:clickable="false"
-            app:srcCompat="@mipmap/ic_launcher"
+            app:srcCompat="@drawable/ic_launcher"
             app:layout_widthPercent="40%"
             app:layout_heightPercent="20%"
             app:layout_marginTopPercent="10%"

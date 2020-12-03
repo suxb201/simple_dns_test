@@ -88,12 +88,12 @@ public class GlobalConfigFragment extends PreferenceFragmentCompat {
         });
 
         findPreference("settings_check_update").setOnPreferenceClickListener(preference -> {
-            Daedalus.openUri("https://github.com/iTXTech/Daedalus/releases");
+            Daedalus.openUri("https://github.com/suxb201/simple_dns_test/releases");
             return false;
         });
 
         findPreference("settings_issue_tracker").setOnPreferenceClickListener(preference -> {
-            Daedalus.openUri("https://github.com/iTXTech/Daedalus/issues");
+            Daedalus.openUri("https://github.com/suxb201/simple_dns_test/issues");
             return false;
         });
 

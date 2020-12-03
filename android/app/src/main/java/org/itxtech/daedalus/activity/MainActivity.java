@@ -100,13 +100,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         updateUserInterface(getIntent());
 
-
-        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            //没有权限则申请权限
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-        } else {
-            //有权限直接执行,docode()不用做处理
-        }
+//外置储存权限
+//        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+//            //没有权限则申请权限
+//            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+//        } else {
+//            //有权限直接执行,docode()不用做处理
+//        }
     }
 
 
@@ -254,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 switchFragment(DnsTestFragment.class);
                 break;
             case R.id.nav_github:
-                Daedalus.openUri("https://github.com/iTXTech/Daedalus");
+                Daedalus.openUri("https://github.com/suxb201/simple_dns_test/tree/main/android");
                 break;
             case R.id.nav_home:
                 switchFragment(HomeFragment.class);

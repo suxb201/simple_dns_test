@@ -239,7 +239,7 @@ public class Daedalus extends Application {
             ShortcutInfo info = new ShortcutInfo.Builder(context, Daedalus.SHORTCUT_ID_ACTIVATE)
                     .setLongLabel(notice)
                     .setShortLabel(notice)
-                    .setIcon(Icon.createWithResource(context, R.mipmap.ic_launcher))
+                    .setIcon(Icon.createWithResource(context, R.drawable.ic_launcher))
                     .setIntent(new Intent(context, MainActivity.class).setAction(Intent.ACTION_VIEW)
                             .putExtra(MainActivity.LAUNCH_ACTION, activate ? MainActivity.LAUNCH_ACTION_DEACTIVATE : MainActivity.LAUNCH_ACTION_ACTIVATE))
                     .build();
