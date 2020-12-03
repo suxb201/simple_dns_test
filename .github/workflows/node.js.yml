@@ -23,7 +23,7 @@ jobs:
     - run: npm ci
     - run: npm run buildall
     - name: Upload
-      if: ${{ github.event_name == 'release' }}
+      if: ${{ github.event_name == 'release' &&  (github.event.action == 'created' || github.event.action == 'published' || github.event.action == 'released' ) }}
       uses: actions/upload-artifact@v2
       with:
         name: ui.exe

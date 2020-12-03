@@ -28,7 +28,7 @@ jobs:
           name: app-debug.apk
           path: android/app/build/outputs/apk/pure/debug/app-debug.apk
       - name: Upload Release
-        if: ${{ github.event_name == 'release' }}
+        if: ${{ github.event_name == 'release' &&  (github.event.action == 'created' || github.event.action == 'published' || github.event.action == 'released' ) }}
         uses: actions/upload-artifact@v2
         with:
           name: app-release.apk
