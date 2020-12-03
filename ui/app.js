@@ -41,7 +41,7 @@ function createWindow() {
                     console.log("备份完成")
                 }
             } catch (e) {
-                win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')])
+                win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')+e])
             }
 
             pyProc = require("./subprocess.js").proc()
@@ -53,7 +53,7 @@ function createWindow() {
                         console.log("写入hosts")
                     }
                 } catch (e) {
-                    win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')])
+                    win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')+e])
                 }
 
             }, 10 * 1000);
@@ -76,9 +76,9 @@ function createWindow() {
     ipcMain.on("clear", () => {
         try {
             fs.copyFileSync(path.join(hostpath, 'hosts.bak'), path.join(hostpath, 'hosts'))
-            fs.rmdirSync(path.join(hostpath, 'hosts.bak'))
+            fs.unlinkSync(path.join(hostpath, 'hosts.bak'))
         } catch (e) {
-            win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')])
+            win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')+e])
         }
     })
     app.on("will-quit", stop)
