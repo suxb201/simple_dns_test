@@ -23,8 +23,8 @@ jobs:
     - run: npm ci
     - run: npm run buildall
     - name: Upload
-        if: ${{ github.event_name == 'release' }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: ui.exe
-          path: build/*.exe
+      if: ${{ github.event_name == 'release' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: ui.exe
+        path: build/*.exe
