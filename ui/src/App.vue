@@ -84,9 +84,9 @@ export default {
         ipcRenderer.send("start")
         serverButtonShow.value = "关闭"
       } else {
-        ipcRenderer.send("stop")
         serverButtonShow.value = "启动"
         message.warning("停!")
+        ipcRenderer.send("stop")
       }
     }
     //表头
@@ -97,7 +97,9 @@ export default {
     ]
     //表格数据
     const tableData = reactive([])
-
+    ipcRenderer.on("message",(event,msg)=>{
+      message[msg[0]](msg[1])
+    })
     //挂载之前的声明周期 读入配置文件 向tabledata中添加数据
     onBeforeMount(() => {
       // title bar
@@ -167,10 +169,13 @@ export default {
       //写入
       fs.writeFileSync(configpath, filestr)
       //重启
-      ipcRenderer.send("stop")
-      setTimeout(() => {
-        ipcRenderer.send("start")
-      }, 1000)
+      if(serverButtonShow.value==="关闭"){
+        ipcRenderer.send("stop")
+
+        setTimeout(() => {
+          ipcRenderer.send("start")
+        }, 1000)
+      }
     })
     const clearhost = () => {
       ipcRenderer.send("stop")

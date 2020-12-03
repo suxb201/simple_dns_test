@@ -26,24 +26,36 @@ function createWindow() {
     }
     // 然后加载应用的 index.html。
     win.loadURL(url)
-    // win.webContents.openDevTools()
+    if (process.env.NODE_ENV === "development") {
+        win.webContents.openDevTools()
+    }
 
     let pyProc
     let interval
     ipcMain.on("start", () => {
-        console.log("启动!")
+        console.log("start!")
         if (!pyProc || pyProc.killed) {
-            if (!fs.existsSync(path.join(hostpath, 'hosts.bak')) &&fs.existsSync(path.join(hostpath, 'hosts')) ) {
-                fs.copyFileSync(path.join(hostpath, 'hosts'), path.join(hostpath, 'hosts.bak'))
-                console.log("备份完成")
+            try {
+                if (!fs.existsSync(path.join(hostpath, 'hosts.bak')) && fs.existsSync(path.join(hostpath, 'hosts'))) {
+                    fs.copyFileSync(path.join(hostpath, 'hosts'), path.join(hostpath, 'hosts.bak'))
+                    console.log("备份完成")
+                }
+            } catch (e) {
+                win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')])
             }
-            pyProc = require("./subprocess.js").proc
+
+            pyProc = require("./subprocess.js").proc()
             if (interval) clearInterval(interval)
             interval = setInterval(() => {
-                if (fs.existsSync(path.join(process.cwd(), "hosts"))){
-                    fs.copyFileSync(path.join(process.cwd(), "hosts"), path.join(hostpath, 'hosts'))
-                    console.log("写入hosts")
+                try {
+                    if (fs.existsSync(path.join(process.cwd(), "hosts"))) {
+                        fs.copyFileSync(path.join(process.cwd(), "hosts"), path.join(hostpath, 'hosts'))
+                        console.log("写入hosts")
+                    }
+                } catch (e) {
+                    win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')])
                 }
+
             }, 10 * 1000);
         }
         if (pyProc != null) {
@@ -51,19 +63,23 @@ function createWindow() {
         }
     })
     const stop = () => {
+        console.log("start stoping")
         if (interval) clearInterval(interval)
-        interval=null
+        interval = null
         if (pyProc) {
-
             pyProc.kill()
+            pyProc = null
         }
+        console.log("stoping finish")
     }
     ipcMain.on("stop", stop)
-    ipcMain.on("clear", ()=>{
-        try{
-            fs.copyFileSync(path.join(hostpath, 'hosts.bak'),path.join(hostpath, 'hosts'))
+    ipcMain.on("clear", () => {
+        try {
+            fs.copyFileSync(path.join(hostpath, 'hosts.bak'), path.join(hostpath, 'hosts'))
             fs.rmdirSync(path.join(hostpath, 'hosts.bak'))
-        }catch (e){console.log(e)}
+        } catch (e) {
+            win.webContents.send("message", ["warning", "没有权限" + path.join(hostpath, 'hosts')])
+        }
     })
     app.on("will-quit", stop)
 }
