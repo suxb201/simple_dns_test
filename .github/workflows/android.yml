@@ -21,5 +21,9 @@ jobs:
       run: cd android && chmod +x gradlew && ./gradlew assembleGoogleDebug
     - name: Build release
       run: cd android && chmod +x gradlew && ./gradlew assembleGoogleRelease
-        
+    - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: app
+          path: app/build/outputs/apk/google/debug/app-debug.apk
         

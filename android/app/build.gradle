@@ -37,7 +37,12 @@ android {
     }
     applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = outputFileName.replace("app", "${defaultConfig.applicationId}_${defaultConfig.versionName}_${gitCommit}")
+//            outputFileName = outputFileName.replace("app", "${defaultConfig.applicationId}_${defaultConfig.versionName}_${gitCommit}")
+            if (outputFileName.find("debug"))
+                outputFileName = "app-debug.apk"
+            else
+                outputFileName = "app-release.apk"
+
         }
     }
     compileOptions {
