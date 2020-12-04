@@ -22,21 +22,10 @@ jobs:
         run: chmod +x gradlew && ./gradlew assemblePureDebug
       - name: Build release
         run: chmod +x gradlew && ./gradlew assemblePureRelease
-      - name: Upload Debug
-        uses: actions/upload-artifact@v2
-        with:
-          name: app-debug.apk
-          path: android/app/build/outputs/apk/pure/debug/app-debug.apk
-      - name: Upload Release
-        uses: actions/upload-artifact@v2
-        with:
-          name: app-release.apk
-          path: android/app/build/outputs/apk/pure/release/app-release.apk
-      
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.YZH_TOKEN }}
-          file: android/app/build/outputs/apk/pure/debug/app-debug.apk
-          asset_name: debug.apk
+          file: android/app/build/outputs/apk/pure/release/app-release.apk
+          asset_name: release.apk
           tag: ${{ github.ref }}
