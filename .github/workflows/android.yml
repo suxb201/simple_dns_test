@@ -1,11 +1,7 @@
 name: Android CI
 
-on:
-  push:
-    paths:
-    - 'android/**'
-  release: 
-    types: [published]
+on: release 
+   
 
 jobs:
   build:
@@ -24,19 +20,16 @@ jobs:
       - name: Build release
         run: chmod +x gradlew && ./gradlew assemblePureRelease
       - name: Upload Debug
-        if: ${{ github.event_name == 'release' }}
         uses: actions/upload-artifact@v2
         with:
           name: app-debug.apk
           path: android/app/build/outputs/apk/pure/debug/app-debug.apk
       - name: Upload Release
-        if: ${{ github.event_name == 'release' &&  (github.event.action == 'published') }}
         uses: actions/upload-artifact@v2
         with:
           name: app-release.apk
           path: android/app/build/outputs/apk/pure/release/app-release.apk
       - name: Upload to release
-        if: ${{ github.event_name == 'release' &&  (github.event.action == 'published') }}
         uses: JasonEtco/upload-to-release@master
         with:
           args: android/app/build/outputs/apk/pure/release/app-release.apk
