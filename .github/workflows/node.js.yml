@@ -24,7 +24,6 @@ jobs:
       with:
         name: ui.exe
         path: ui/build/*.exe
-    - run: ls ui/build/
     - name: Upload to release
       uses: JasonEtco/upload-to-release@master
       with:
