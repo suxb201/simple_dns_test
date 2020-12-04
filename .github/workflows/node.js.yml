@@ -5,7 +5,7 @@ name: ElectronBuild
 on:
   push:
     paths:
-      - 'ui/**'
+    - 'ui/**'
 
 
 jobs:
@@ -27,4 +27,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ui.exe
-        path: build/*.exe
+        path: ui/build/*.exe
