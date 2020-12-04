@@ -32,12 +32,7 @@ jobs:
         with:
           name: app-release.apk
           path: android/app/build/outputs/apk/pure/release/app-release.apk
-      - name: Upload to release
-        uses: JasonEtco/upload-to-release@master
-        with:
-          args: android/app/build/outputs/apk/pure/release/app-release.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.YZH_TOKEN }}
+      
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
