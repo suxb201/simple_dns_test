@@ -21,11 +21,24 @@ jobs:
         run: chmod +x gradlew && ./gradlew assemblePureDebug
       - name: Build release
         run: chmod +x gradlew && ./gradlew assemblePureRelease
+
+      - name: sign release
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/pure/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.PASSWORD }}
+          keyPassword: ${{ secrets.PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "29.0.2"
+          
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.YZH_TOKEN }}
-          file: android/app/build/outputs/apk/pure/release/app-release.apk
+          file: ${{steps.sign_app.outputs.signedReleaseFile}}
           asset_name: release.apk
           tag: ${{ github.ref }}
       - name: Upload debug binaries to release
