@@ -28,12 +28,12 @@ jobs:
         with:
           releaseDirectory: android/app/build/outputs/apk/pure/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
+          alias: ${{ secrets.ALAIS }}
           keyStorePassword: ${{ secrets.PASSWORD }}
           keyPassword: ${{ secrets.PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: "29.0.2"
-          
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
