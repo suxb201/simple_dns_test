@@ -2,7 +2,7 @@ const {app, BrowserWindow, ipcMain, Menu} = require("electron")
 const path = require("path")
 const hostpath = path.join(process.env.windir, 'System32', 'drivers', 'etc')
 const fs = require('fs')
-//testtest
+//testtesttest
 function createWindow() {
     // 创建浏览器窗口
     win = new BrowserWindow({
