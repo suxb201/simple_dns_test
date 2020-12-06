@@ -31,3 +31,19 @@
 ![image-20201206130046672](README.assets/image-20201206130046672.png)
 
 有小锁头就是启动成功了
+
+
+
+## pc使用方法
+
+首先安装 WinPcap.exe
+
+然后安装PC-Client.exe
+
+![image-20201206131206930](README.assets/image-20201206131206930.png)
+
+直接点启动就行了
+
+你之前的hosts文件会被备份到hosts.bak
+
+按回复hosts来将自己的hosts恢复到之前的样子
