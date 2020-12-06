@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
@@ -156,6 +158,7 @@ public class DaedalusVpnService extends VpnService implements Runnable {
             switch (intent.getAction()) {
                 case ACTION_ACTIVATE:
                     activated = true;
+
                     if (Daedalus.getPrefs().getBoolean("settings_notification", false)) {
                         NotificationManager manager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -517,7 +520,22 @@ public class DaedalusVpnService extends VpnService implements Runnable {
                 builder.allowFamily(OsConstants.AF_INET);
                 builder.allowFamily(OsConstants.AF_INET6);
             }
-
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                builder.setMetered(false);
+            }
+//            try{
+//                NetworkRequest rr= new NetworkRequest.Builder()
+//                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+//                        .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+//                        .build();
+//                ConnectivityManager m=(ConnectivityManager)getSystemService(Context.CONNECTIVITY_SERVICE);
+//                ConnectivityManager.NetworkCallback cb=new ConnectivityManager.NetworkCallback();
+//                m.registerNetworkCallback(
+//                        rr,cb
+//                );
+//            }catch(Exception ignored){
+//
+//            }
             descriptor = builder.establish();
             Logger.info("Daedalus VPN service is started");
 
