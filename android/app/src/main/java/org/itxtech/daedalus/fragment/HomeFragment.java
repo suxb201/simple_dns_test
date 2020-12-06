@@ -31,7 +31,14 @@ public class HomeFragment extends ToolbarFragment {
 
         Button but = view.findViewById(R.id.button_activate);
         but.setOnClickListener(v -> {
+            if(DaedalusVpnService.isActivated()){
+                but.setText(R.string.button_text_activate);
+            }else{
+                but.setText(R.string.button_text_deactivate);
+            }
+
             if (DaedalusVpnService.isActivated()) {
+
                 Daedalus.deactivateService(getActivity().getApplicationContext());
             } else {
                 startActivity(new Intent(getActivity(), MainActivity.class)
@@ -40,6 +47,11 @@ public class HomeFragment extends ToolbarFragment {
         });
 
         return view;
+    }
+
+    public void onResume() {
+        super.onResume();
+        updateUserInterface();
     }
 
     @Override

@@ -1,10 +1,13 @@
 package org.itxtech.daedalus.service;
 
+import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -16,6 +19,7 @@ import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.system.OsConstants;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
@@ -76,6 +80,8 @@ import static java.util.stream.Collectors.counting;
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  */
+
+
 public class DaedalusVpnService extends VpnService implements Runnable {
     public static final String ACTION_ACTIVATE = "org.itxtech.daedalus.service.DaedalusVpnService.ACTION_ACTIVATE";
     public static final String ACTION_DEACTIVATE = "org.itxtech.daedalus.service.DaedalusVpnService.ACTION_DEACTIVATE";
@@ -107,6 +113,40 @@ public class DaedalusVpnService extends VpnService implements Runnable {
     }
 
     public Thread changehostThread;
+
+
+    public static class ActivityUtils {
+
+        /**
+         * 判断某个界面是否在前台
+         *
+         * @param activity 要判断的Activity
+         * @return 是否在前台显示
+         */
+        public static boolean isForeground(Activity activity) {
+            return isForeground(activity, activity.getClass().getName());
+        }
+
+        /**
+         * 判断某个界面是否在前台
+         *
+         * @param context   Context
+         * @param className 界面的类名
+         * @return 是否在前台显示
+         */
+        public static boolean isForeground(Context context, String className) {
+            if (context == null || TextUtils.isEmpty(className))
+                return false;
+            ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            List<ActivityManager.RunningTaskInfo> list = am.getRunningTasks(1);
+            if (list != null && list.size() > 0) {
+                ComponentName cpn = list.get(0).topActivity;
+                if (className.equals(cpn.getClassName()))
+                    return true;
+            }
+            return false;
+        }
+    }
 
     @Override
     public void onCreate() {
@@ -208,10 +248,10 @@ public class DaedalusVpnService extends VpnService implements Runnable {
                         //空配置文件 尝试从host里读入一份
                         {
                             String file = Daedalus.rulePath + "晓斌加速器" + ".dr";//Daedalus Rule
-                            AtomicInteger rulecount=new AtomicInteger();
+                            AtomicInteger rulecount = new AtomicInteger();
                             try (Stream<String> lines = Files.lines(Paths.get(file))) {
                                 lines.map(s -> s.split(" "))
-                                        .filter(arrs->arrs.length>2)
+                                        .filter(arrs -> arrs.length > 2)
                                         .forEach(arrs -> {
                                             rulecount.getAndIncrement();
                                             IpContainer.name_ip_time.put(arrs[1], new ConcurrentHashMap<String, Double>() {{
@@ -239,7 +279,7 @@ public class DaedalusVpnService extends VpnService implements Runnable {
                                 int activeCount = tpe.getActiveCount();
                                 long completedTaskCount = tpe.getCompletedTaskCount();
                                 long taskCount = tpe.getTaskCount();
-                                if(activeCount>0){
+                                if (activeCount > 0) {
                                     Logger.i("线程性能:" + queueSize + "(积压) + " + activeCount + "(执行中) ");
                                 }
                                 if (System.currentTimeMillis() - lastfilesave >= sleepsecond * 1000) {
@@ -328,9 +368,11 @@ public class DaedalusVpnService extends VpnService implements Runnable {
                     startThread();
                     Daedalus.updateShortcut(getApplicationContext());
                     if (MainActivity.getInstance() != null) {
-                        //我选择不拉起主页面
-//                        MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
-//                                .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
+                        if (ActivityUtils.isForeground((Activity) MainActivity.getInstance())) {
+                            //如果在前台 就刷新一下按钮
+                            MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
+                                    .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
+                        }
                     }
                     return START_STICKY;
                 case ACTION_DEACTIVATE:
@@ -405,8 +447,12 @@ public class DaedalusVpnService extends VpnService implements Runnable {
         }
 
         if (shouldRefresh && MainActivity.getInstance() != null) {
-//            MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
-//                    .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
+
+            if (ActivityUtils.isForeground((Activity) MainActivity.getInstance())) {
+                //如果在前台 就刷新一下按钮
+                MainActivity.getInstance().startActivity(new Intent(getApplicationContext(), MainActivity.class)
+                        .putExtra(MainActivity.LAUNCH_ACTION, MainActivity.LAUNCH_ACTION_SERVICE_DONE));
+            }
         } else if (shouldRefresh) {
             Daedalus.updateShortcut(getApplicationContext());
         }
