@@ -39,5 +39,5 @@ jobs:
       with:
         repo_token: ${{ secrets.YZH_TOKEN }}
         file: ui/build/ui Setup 1.0.0.exe
-        asset_name: ui.exe
+        asset_name: PC-Client.exe
         tag: ${{ github.ref }}

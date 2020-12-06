@@ -14,6 +14,7 @@ import eventloop
 from config import config
 from tcp_latency import TCPLatency
 import os
+import time
 
 VALID_HOSTNAME = re.compile(r"(?!-)[A-Z\d\-_]{1,63}(?<!-)$", re.IGNORECASE)
 
@@ -96,7 +97,8 @@ class DNSPackage:
     def _parse_record_answer(data, offset):
         nlen, name = DNSPackage._parse_name(data, offset)
 
-        record_type, record_class, record_ttl, record_rdlength = struct.unpack('!HHiH', data[offset + nlen:offset + nlen + 10])
+        record_type, record_class, record_ttl, record_rdlength = struct.unpack('!HHiH',
+                                                                               data[offset + nlen:offset + nlen + 10])
         ip = DNSPackage._parse_ip(record_type, data, record_rdlength, offset + nlen + 10)
         return nlen + 10 + record_rdlength, ip  # 10=HHiH
 
@@ -153,7 +155,7 @@ class Item:
         self.ip = None
         self.count: int = 0
         self.timestamp: float = 0
-
+        self.startTime = 0
         self.ip_to_nameserver: Dict[str, Set[str]] = {}
         self.ip_to_latency: Dict[str, float] = {}
 
@@ -195,7 +197,7 @@ class DNSResolver(object):
         self._hosts: Dict[str, Item] = dict()
         if os.path.exists(config['dns']['temp_file_name']):
             with open(config['dns']['temp_file_name'], 'rb') as f:
-                self._hosts = pickle.load(f)
+                self._hosts: Dict[str, Item] = pickle.load(f)
                 logging.info(f'load {len(self._hosts)} hostnames.')
         self._exclude: Set[str] = set()
         self._id_to_hostname: Dict[int, str] = dict()
@@ -204,6 +206,7 @@ class DNSResolver(object):
         self._loop = loop  # 主循环
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.SOL_UDP)
         self._socket.setblocking(False)
+        self.unResolveItem: Set[Item] = set()
         loop.add(self._socket, eventloop.POLL_IN, self)
         loop.add_periodic(self.handle_periodic)
 
@@ -238,15 +241,24 @@ class DNSResolver(object):
         self._handle_data(data)
 
     def handle_periodic(self):
+        # 不会有dns过了1秒还不返回结果吧
+
+        for (hostname,item) in self._hosts.items():
+            if time.time() - item.startTime>1 and item.status == STATUS.RUNNING:
+                item.calc_fastest_ip_fast()
+                item.status = STATUS.FINISH
+
         write_to_file = []
         hostnames = DNSResolver.cy_sort(self._hosts.keys())
         for hostname in hostnames:
             item = self._hosts[hostname]
             if item.ip is not None:
                 if len(hostname) > 30:
-                    write_to_file.append(f"{item.ip:<15} {hostname:>51} # {item.ip_to_latency[item.ip]:>6}ms {list(reversed(sorted(list(item.ip_to_nameserver[item.ip]))))}\n")
+                    write_to_file.append(
+                        f"{item.ip:<15} {hostname:>51} # {item.ip_to_latency[item.ip]:>6}ms {list(reversed(sorted(list(item.ip_to_nameserver[item.ip]))))}\n")
                 else:
-                    write_to_file.append(f"{item.ip:<15} {hostname:>31} # {item.ip_to_latency[item.ip]:>6}ms {list(reversed(sorted(list(item.ip_to_nameserver[item.ip]))))}\n")
+                    write_to_file.append(
+                        f"{item.ip:<15} {hostname:>31} # {item.ip_to_latency[item.ip]:>6}ms {list(reversed(sorted(list(item.ip_to_nameserver[item.ip]))))}\n")
         with open(config['dns']['file_name'], 'w', encoding='utf-8') as f:
             for item in write_to_file:
                 f.write(item)
@@ -278,6 +290,7 @@ class DNSResolver(object):
                 self._send_req(nameserver, hostname)
                 item.count += 1
             item.status = STATUS.RUNNING
+            item.startTime = time.time()
 
         if item.status == STATUS.FINISH:
             if item.is_fresh():
@@ -288,6 +301,7 @@ class DNSResolver(object):
                     self._send_req(nameserver, hostname)
                     item.count += 1
                 item.status = STATUS.RUNNING
+                item.startTime = time.time()
 
     def close(self):
         if self._socket:
