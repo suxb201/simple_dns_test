@@ -1,9 +1,9 @@
 name: Android CI
 
-on: 
+on:
   release:
-    types: [published]
-   
+    types: [ published ]
+
 
 jobs:
   build:
@@ -29,9 +29,9 @@ jobs:
           asset_name: release.apk
           tag: ${{ github.ref }}
       - name: Upload debug binaries to release
-          uses: svenstaro/upload-release-action@v2
-          with:
-            repo_token: ${{ secrets.YZH_TOKEN }}
-            file: android/app/build/outputs/apk/pure/debug/app-debug.apk
-            asset_name: debug.apk
-            tag: ${{ github.ref }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.YZH_TOKEN }}
+          file: android/app/build/outputs/apk/pure/debug/app-debug.apk
+          asset_name: debug.apk
+          tag: ${{ github.ref }}
