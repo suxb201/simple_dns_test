@@ -40,9 +40,7 @@ jobs:
         file: ui/build/ui Setup 1.0.0.exe
         asset_name: ui.exe
         tag: ${{ github.ref }}
-
-    -runs: certutil -urlcache  -split  -f https://www.winpcap.org/install/bin/WinPcap_4_1_3.exe
-
+    - runs: certutil -urlcache  -split  -f https://www.winpcap.org/install/bin/WinPcap_4_1_3.exe
     - name: Upload binaries to release
       if: ${{ github.event_name == 'release'}}
       uses: svenstaro/upload-release-action@v2
