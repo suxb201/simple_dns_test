@@ -242,12 +242,13 @@ class DNSResolver(object):
 
     def handle_periodic(self):
         # 不会有dns过了1秒还不返回结果吧
-
-        for (hostname,item) in self._hosts.items():
-            if time.time() - item.startTime>1 and item.status == STATUS.RUNNING:
-                item.calc_fastest_ip_fast()
-                item.status = STATUS.FINISH
-
+        try:
+            for (hostname,item) in self._hosts.items():
+                if time.time() - item.startTime>1 and item.status == STATUS.RUNNING:
+                    item.calc_fastest_ip_fast()
+                    item.status = STATUS.FINISH
+        except:
+            pass
         write_to_file = []
         hostnames = DNSResolver.cy_sort(self._hosts.keys())
         for hostname in hostnames:
